@@ -200,6 +200,50 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
+### 私聊服务示例
+
+```rust
+use fishpi_rust::FishPi;
+use fishpi_rust::ChatData;
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let client = FishPi::new();
+    
+    // 连接私聊服务
+    client.chat.connect().await?;
+    println!("已连接到私聊服务");
+    
+    // 添加消息监听器
+    client.chat.add_listener(|data: ChatData| {
+        println!("收到私聊消息: {:?}", data);
+    }).await?;
+    
+    // 发送私聊消息
+    let response = client.chat.send("username", "Hello!").await?;
+    println!("发送私聊消息结果: {:?}", response);
+    
+    // 获取历史消息
+    let messages = client.chat.get_history("username", 1).await?;
+    println!("获取到 {} 条历史消息", messages.data.len());
+    
+    // 获取未读消息数
+    let unread = client.chat.get_unread_count().await?;
+    println!("未读消息数: {}", unread);
+    
+    // 标记消息为已读
+    client.chat.mark_read("username").await?;
+    println!("已标记消息为已读");
+    
+    // 断开连接
+    client.chat.disconnect().await?;
+    println!("已断开连接");
+    
+    Ok(())
+}
+```
+
 ### 文章功能示例
 
 ```rust

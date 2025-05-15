@@ -19,9 +19,9 @@ keywords = ["fishpi"]
 name = "fishpi_rust"
 path = "src/lib.rs"
 
-# [[bin]]
-# name = "fishpi-client"
-# path = "fishpi-client/src/main.rs"
+[[bin]]
+name = "fishpi-client"
+path = "fishpi-client/src/main.rs"
 
 
 [dependencies]
@@ -49,7 +49,9 @@ md5 = "0.7"
 lazy_static = "1.4"
 rand = "0.9.1"
 thiserror = "2.0.12"
-
+webbrowser = "1.0"
+html2text = "0.15.0"
+rustyline = "15.0.0"
 
 [package.metadata.docs.rs]
 all-features = true
