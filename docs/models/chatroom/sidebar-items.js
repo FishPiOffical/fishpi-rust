@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ChatRoomDataContent","ChatRoomQueryMode","SpecialMessageContent","WebSocketMessage"],"struct":["BarrageCost","BarragerMsg","ChatContentType","ChatRoomData","ChatRoomMessage","ChatRoomMessageType","ChatRoomNode","ChatRoomNodeInfo","ChatRoomUser","ChatSource","ClientType","MusicMsg","MuteItem","WeatherMsg","WeatherMsgData"]};

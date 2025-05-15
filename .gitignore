@@ -1,0 +1,43 @@
+# Ignore everything
+*
+
+# Rust specific
+/target/
+**/*.rs.bk
+Cargo.lock
+*.pdb
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Sensitive files
+token.txt
+.env
+*.key
+*.pem
+*.cert
+*.crt
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Allow src directory
+!src/
+!src/**
+!Cargo.toml
+!.gitignore
+!README.md
+!docs/
+!docs/**

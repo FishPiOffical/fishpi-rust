@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["fishpi_rust",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"fishpi_rust/models/article/enum.ArticleStatus.html\" title=\"enum fishpi_rust::models::article::ArticleStatus\">ArticleStatus</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"fishpi_rust/models/article/enum.ArticleType.html\" title=\"enum fishpi_rust::models::article::ArticleType\">ArticleType</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"fishpi_rust/models/article/enum.VoteStatus.html\" title=\"enum fishpi_rust::models::article::VoteStatus\">VoteStatus</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"fishpi_rust/models/redpacket/enum.GestureType.html\" title=\"enum fishpi_rust::models::redpacket::GestureType\">GestureType</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/marker/trait.Copy.html\" title=\"trait core::marker::Copy\">Copy</a> for <a class=\"enum\" href=\"fishpi_rust/models/user/enum.UserAppRole.html\" title=\"enum fishpi_rust::models::user::UserAppRole\">UserAppRole</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1493]}

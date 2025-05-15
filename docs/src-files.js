@@ -1,0 +1,3 @@
+var srcIndex = new Map(JSON.parse('[["fishpi_rust",["",[["api",[],["article_api.rs","breezemoon_api.rs","chat_api.rs","chatroom_api.rs","client.rs","comment_api.rs","emoji_api.rs","mod.rs","notice_api.rs","redpacket_api.rs","user_api.rs"]],["models",[],["article.rs","breezemoon.rs","chat.rs","chatroom.rs","comment.rs","emoji.rs","mod.rs","notice.rs","redpacket.rs","upload.rs","user.rs"]],["services",[],["article_service.rs","breezemoon_service.rs","chat_service.rs","chatroom_service.rs","comment_service.rs","emoji_service.rs","mod.rs","notice_service.rs","redpacket_service.rs","user_service.rs"]]],["lib.rs"]]]]'));
+createSrcSidebar();
+//{"start":36,"fragment_lengths":[581]}

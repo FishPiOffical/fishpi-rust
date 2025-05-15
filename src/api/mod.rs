@@ -1,0 +1,21 @@
+pub mod article_api;
+pub mod breezemoon_api;
+pub mod chat_api;
+pub mod chatroom_api;
+pub mod client;
+pub mod comment_api;
+pub mod emoji_api;
+pub mod notice_api;
+pub mod redpacket_api;
+pub mod user_api;
+
+pub use article_api::ArticleApi;
+pub use breezemoon_api::BreezemoonApi;
+pub use chat_api::ChatApi;
+pub use chatroom_api::ChatroomApi;
+pub use client::ApiClient;
+pub use comment_api::CommentApi;
+pub use emoji_api::EmojiApi;
+pub use notice_api::NoticeApi;
+pub use redpacket_api::RedpacketApi;
+pub use user_api::UserApi;

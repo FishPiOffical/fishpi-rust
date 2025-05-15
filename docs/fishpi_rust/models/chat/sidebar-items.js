@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ChatDataContent"],"struct":["ChatData","ChatMessage","ChatMessageType","ChatNotice","ChatRevoke","MessageInfo","WebsocketInfo"]};

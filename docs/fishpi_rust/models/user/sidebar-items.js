@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["UserAppRole"],"struct":["ApiResponse","LoginResponse","Metal","MetalAttr","Response","UserInfo"],"type":["MetalList"]};
