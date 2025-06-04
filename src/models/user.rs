@@ -112,6 +112,37 @@ pub struct UserInfo {
     pub all_metals: Option<Value>,
 }
 
+impl Default for UserInfo {
+    fn default() -> Self {
+        Self {
+            oid: None,
+            user_oid: None,
+            user_no: None,
+            user_name: String::new(),
+            user_nickname: None,
+            user_avatar_url: None,
+            user_role: None,
+            user_url: None,
+            user_online_flag: None,
+            user_point: None,
+            user_app_role: None,
+            user_intro: None,
+            card_bg: None,
+            online_minute: None,
+            user_city: None,
+            user_checkin_streak_start: None,
+            user_checkin_streak_end: None,
+            user_current_checkin_streak: None,
+            user_longest_checkin_streak: None,
+            sys_metal: Value::Null,
+            following_cnt: None,
+            follower_cnt: None,
+            can_follow: None,
+            all_metals: None,
+        }
+    }
+}
+
 impl UserInfo {
     pub fn name(&self) -> String {
         match &self.user_nickname {

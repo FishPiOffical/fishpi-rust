@@ -15,17 +15,6 @@ pub struct BreezemoonList {
 }
 
 
-// {
-//     "breezemoonAuthorName": "ElysianRealm",
-//     "breezemoonUpdated": 1745198471942,
-//     "oId": "1745198471942",
-//     "breezemoonCreated": 1745198471942,
-//     "breezemoonAuthorThumbnailURL48": "https://file.fishpi.cn/2024/11/88A4F945DAE8874B7EFE2A4EEA8D2C29-1cfde30d.gif?imageView2/1/w/48/h/48/interlace/0/q/100",
-//     "timeAgo": "2 小时前",
-//     "breezemoonContent": "\u003Cp\u003E想看哀酱苦茶子的第三十七天，梆硬\u003C/p\u003E",
-//     "breezemoonCreateTime": "Mon Apr 21 09:21:11 CST 2025",
-//     "breezemoonCity": "北京"
-//   },
 /// 清风明月返回
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Breezemoon {
@@ -36,10 +25,10 @@ pub struct Breezemoon {
     #[serde(rename = "breezemoonAuthorName")]
     pub author_name: String,
     /// 创建时间字符串
-    #[serde(rename = "breezemoonCreated")]
+    #[serde(rename = "breezemoonCreated", default)]
     pub created: i64,
     /// 创建时间戳（毫秒）
-    #[serde(rename = "breezemoonCreateTime")]
+    #[serde(rename = "breezemoonCreateTime", default)]
     pub created_time: String,
     /// 清风明月内容
     #[serde(rename = "breezemoonContent")]
@@ -48,13 +37,13 @@ pub struct Breezemoon {
     #[serde(rename = "oId")]
     pub id: String,
     /// 城市
-    #[serde(rename = "breezemoonCity")]
+    #[serde(rename = "breezemoonCity", default)]
     pub city: String,
     /// 更新时间
-    #[serde(rename = "breezemoonUpdated")]
+    #[serde(rename = "breezemoonUpdated", default)]
     pub updated: i64,
     /// 更新时间字符串
-    #[serde(rename = "timeAgo")]
+    #[serde(rename = "timeAgo", default)]
     pub time_ago: String,
 }
 
@@ -62,6 +51,7 @@ pub struct Breezemoon {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BreezemoonPost {
     /// 内容
+    #[serde(rename = "breezemoonContent")]
     pub content: String,
 }
 
@@ -70,9 +60,6 @@ pub struct BreezemoonPost {
 pub struct BreezemoonResponse {
     /// 状态码，0为成功
     pub code: i32,
-    /// 消息
-    pub msg: String,
-    /// 清风明月ID
-    #[serde(rename = "breezemoonId")]
-    pub breezemoon_id: Option<String>,
+    /// 返回数据
+    pub data: Breezemoon,
 } 

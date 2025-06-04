@@ -116,10 +116,10 @@ impl BreezemoonApi {
         let result: BreezemoonResponse = self.client.post("breezemoon", None, json_data).await?;
 
         if result.code != 0 {
-            return Err(anyhow!(result.msg));
+            return Err(anyhow!("发布清风明月失败"));
         }
 
-        Ok(result.breezemoon_id.unwrap_or_default())
+        Ok(result.data.id)
     }
 
     /// 更新清风明月
@@ -141,10 +141,10 @@ impl BreezemoonApi {
         let result: BreezemoonResponse = self.client.post(&path, None, json_data).await?;
 
         if result.code != 0 {
-            return Err(anyhow!(result.msg));
+            return Err(anyhow!("更新清风明月失败"));
         }
 
-        Ok(result.breezemoon_id.unwrap_or_default())
+        Ok(result.data.id)
     }
 
     /// 删除清风明月
