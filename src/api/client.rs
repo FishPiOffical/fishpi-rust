@@ -332,4 +332,32 @@ impl ApiClient {
 
         result
     }
+
+    pub async fn get_html(&self, path: &str, params: Option<HashMap<String, String>>) -> Result<String> {
+        let mut url = self.build_url(path).await;
+        
+        if let Some(params) = params {
+            url = Self::add_params_to_url(&url, params);
+        }
+
+        let response = self.client
+            .get(&url)
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .send()
+            .await?;
+
+        let status = response.status();
+        let text = response.text().await?;
+
+        if !status.is_success() {
+            return Err(anyhow::anyhow!(
+                "HTTP请求失败: 状态码 {}, 响应: {}",
+                status,
+                text
+            ));
+        }
+
+        Ok(text)
+    }
+    
 }

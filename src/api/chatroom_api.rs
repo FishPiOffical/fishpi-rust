@@ -237,35 +237,27 @@ impl ChatroomApi {
 
         Ok(response)
     }
-
+    
     /// 获取弹幕发送价格
     ///
     /// 返回弹幕价格信息
     pub async fn get_barrage_cost(&self) -> Result<BarrageCost> {
-        log::debug!("获取弹幕发送价格");
-
         let token = self.client.get_token().await;
         let params = self.build_params(HashMap::new(), token);
 
-        let response = self.client.get::<String>("/cr", Some(params)).await?;
+        let response = self.client.get_html("/cr", Some(params)).await?;
 
-        let re = Regex::new(r">发送弹幕每次将花费\s*<b>([-0-9]+)</b>\s*([^<]*?)</div>").unwrap();
-
-        if let Some(caps) = re.captures(&response) {
-            let cost = caps
-                .get(1)
-                .map_or("20", |m| m.as_str())
-                .parse::<i32>()
-                .unwrap_or(20);
-            let unit = caps.get(2).map_or("积分", |m| m.as_str()).to_string();
-            Ok(BarrageCost { cost, unit })
-        } else {
-            log::debug!("解析弹幕发送价格失败，使用默认值");
-            Ok(BarrageCost {
-                cost: 20,
-                unit: "积分".to_string(),
-            })
+        let re1 = Regex::new(r#"发送弹幕每次将花费\s*<b><span[^>]*>([-0-9]+)</span></b>\s*<span[^>]*>([^<]*)</span>"#).unwrap();
+        if let Some(caps) = re1.captures(&response) {
+            let cost = caps.get(1).map_or("5", |m| m.as_str()).parse::<i32>().unwrap_or(20);
+            let unit = caps.get(2).map_or("积分", |m| m.as_str()).trim().to_string();
+            return Ok(BarrageCost { cost, unit });
         }
+
+        Ok(BarrageCost {
+            cost: 5,
+            unit: "积分".to_string(),
+        })
     }
 
     /// 获取禁言中成员列表
