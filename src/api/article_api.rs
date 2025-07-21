@@ -1,14 +1,15 @@
-use anyhow::{anyhow, Result};
-use serde_json::{json, Value};
+use anyhow::{Result, anyhow};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 use crate::api::client::ApiClient;
 use crate::models::article::{
-    ArticleDetail, ArticleList, ArticleListType, ArticlePost, CommentPost, ResponseResult, ArticleListParams
+    ArticleDetail, ArticleList, ArticleListParams, ArticleListType, ArticlePost, CommentPost,
+    ResponseResult,
 };
 
 /// 帖子API接口
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ArticleApi {
     client: ApiClient,
 }
@@ -33,7 +34,10 @@ impl ArticleApi {
             }
         }
 
-        let result = self.client.post::<Value>("article", None, json_data).await?;
+        let result = self
+            .client
+            .post::<Value>("article", None, json_data)
+            .await?;
 
         if result["code"] != 0 {
             let error_msg = result["msg"].as_str().unwrap_or("未知错误").to_string();
@@ -105,7 +109,7 @@ impl ArticleApi {
         let mut query_params = HashMap::new();
         query_params.insert("p".to_string(), params.page.to_string());
         query_params.insert("size".to_string(), params.size.to_string());
-        
+
         if let Some(token) = self.client.get_token().await {
             query_params.insert("apiKey".to_string(), token);
         }
@@ -122,7 +126,10 @@ impl ArticleApi {
             Ok(article_list) => Ok(article_list),
             Err(e) => {
                 println!("解析文章列表失败: {}", e);
-                println!("原始数据: {}", serde_json::to_string_pretty(&result["data"])?);
+                println!(
+                    "原始数据: {}",
+                    serde_json::to_string_pretty(&result["data"])?
+                );
                 Err(anyhow!("解析文章列表失败: {}", e))
             }
         }
@@ -154,7 +161,7 @@ impl ArticleApi {
                 domain: None,
             }
         };
-        
+
         self.get_article_list_with_params(&params).await
     }
 
@@ -219,7 +226,7 @@ impl ArticleApi {
     ) -> Result<ArticleList> {
         let mut params = ArticleListParams::domain(domain, page, size);
         params.list_type = type_.to_string();
-        
+
         self.get_article_list_with_params(&params).await
     }
 
@@ -241,7 +248,7 @@ impl ArticleApi {
         let mut params = HashMap::new();
         params.insert("p".to_string(), page.to_string());
         params.insert("size".to_string(), size.to_string());
-        
+
         if let Some(token) = self.client.get_token().await {
             params.insert("apiKey".to_string(), token);
         }
@@ -255,7 +262,7 @@ impl ArticleApi {
 
         match serde_json::from_value::<ArticleList>(result["data"].clone()) {
             Ok(article_list) => Ok(article_list),
-            Err(e) => Err(anyhow!("解析用户帖子列表失败: {}", e))
+            Err(e) => Err(anyhow!("解析用户帖子列表失败: {}", e)),
         }
     }
 
@@ -268,7 +275,7 @@ impl ArticleApi {
     pub async fn get_article_detail(&self, id: &str, p: i32) -> Result<ArticleDetail> {
         let url = format!("api/article/{}", id);
         let mut params = HashMap::from([("p".to_string(), p.to_string())]);
-        
+
         if let Some(token) = self.client.get_token().await {
             params.insert("apiKey".to_string(), token);
         }
@@ -283,7 +290,10 @@ impl ArticleApi {
             Ok(article) => Ok(article),
             Err(e) => {
                 println!("解析文章详情失败: {}", e);
-                println!("原始数据: {}", serde_json::to_string_pretty(&result["data"]["article"])?);
+                println!(
+                    "原始数据: {}",
+                    serde_json::to_string_pretty(&result["data"]["article"])?
+                );
                 Err(anyhow!("解析文章详情失败: {}", e))
             }
         }
@@ -325,7 +335,7 @@ impl ArticleApi {
     ///
     /// 返回执行结果
     pub async fn thank_article(&self, id: &str) -> Result<ResponseResult> {
-        let url = format!("article/thank");
+        let url = "article/thank".to_string();
 
         let mut params = HashMap::new();
         params.insert("articleId".to_string(), id.to_string());
@@ -394,7 +404,7 @@ impl ArticleApi {
     ///
     /// 返回执行结果
     pub async fn reward_article(&self, id: &str) -> Result<ResponseResult> {
-        let url = format!("article/reward");
+        let url = "article/reward".to_string();
 
         let mut params = HashMap::new();
         params.insert("articleId".to_string(), id.to_string());
@@ -483,7 +493,10 @@ impl ArticleApi {
             }
         }
 
-        let result = self.client.post::<Value>("comment", None, json_data).await?;
+        let result = self
+            .client
+            .post::<Value>("comment", None, json_data)
+            .await?;
 
         if result["code"] != 0 {
             let error_msg = result["msg"].as_str().unwrap_or("未知错误").to_string();
@@ -504,7 +517,7 @@ impl ArticleApi {
 
         let mut params = HashMap::new();
         params.insert("p".to_string(), page.to_string());
-        
+
         if let Some(token) = self.client.get_token().await {
             params.insert("apiKey".to_string(), token);
         }

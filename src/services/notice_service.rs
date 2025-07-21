@@ -1,5 +1,5 @@
-use crate::api::client::ApiClient;
 use crate::api::NoticeApi;
+use crate::api::client::ApiClient;
 use crate::models::notice::{
     NoticeAt, NoticeComment, NoticeCount, NoticeFollow, NoticeItem, NoticeMsg, NoticeMsgType,
     NoticePoint, NoticeSystem, NoticeType, NoticeWebsocketInfo,
@@ -25,7 +25,7 @@ pub type CloseHandler = Box<dyn Fn() + Send + Sync>;
 /// 通知服务
 #[derive(Clone)]
 pub struct NoticeService {
-    notice_api: Arc<NoticeApi>,
+    notice_api: NoticeApi,
     websocket_info: Arc<Mutex<Option<NoticeWebsocketInfo>>>,
     message_listeners: Arc<Mutex<Vec<NoticeListener>>>,
     websocket_sender: Arc<Mutex<Option<futures::channel::mpsc::UnboundedSender<Message>>>>,
@@ -33,9 +33,22 @@ pub struct NoticeService {
     close_handlers: Arc<Mutex<Vec<CloseHandler>>>,
 }
 
+impl std::fmt::Debug for NoticeService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NoticeService")
+            .field("notice_api", &self.notice_api)
+            .field("websocket_info", &self.websocket_info)
+            .field("message_listeners", &"<function callbacks>")
+            .field("websocket_sender", &self.websocket_sender)
+            .field("error_handlers", &"<function callbacks>")
+            .field("close_handlers", &"<function callbacks>")
+            .finish()
+    }
+}
+
 impl NoticeService {
     /// 创建新的通知服务
-    pub fn new(notice_api: Arc<NoticeApi>) -> Self {
+    pub fn new(notice_api: NoticeApi) -> Self {
         Self {
             notice_api,
             websocket_info: Arc::new(Mutex::new(None)),
@@ -118,11 +131,19 @@ impl NoticeService {
         }
 
         match notice_type {
-            NoticeType::POINT => convert_notices::<NoticePoint>(self, page, "获取积分通知列表失败").await,
-            NoticeType::COMMENTED => convert_notices::<NoticeComment>(self, page, "获取评论通知列表失败").await,
+            NoticeType::POINT => {
+                convert_notices::<NoticePoint>(self, page, "获取积分通知列表失败").await
+            }
+            NoticeType::COMMENTED => {
+                convert_notices::<NoticeComment>(self, page, "获取评论通知列表失败").await
+            }
             NoticeType::AT => convert_notices::<NoticeAt>(self, page, "获取提及通知列表失败").await,
-            NoticeType::FOLLOWING => convert_notices::<NoticeFollow>(self, page, "获取关注通知列表失败").await,
-            NoticeType::SYSTEM => convert_notices::<NoticeSystem>(self, page, "获取系统通知列表失败").await,
+            NoticeType::FOLLOWING => {
+                convert_notices::<NoticeFollow>(self, page, "获取关注通知列表失败").await
+            }
+            NoticeType::SYSTEM => {
+                convert_notices::<NoticeSystem>(self, page, "获取系统通知列表失败").await
+            }
             _ => match self.notice_api.list(notice_type, page).await {
                 Ok(value) => match value.as_array() {
                     Some(array) => Response::success(array.to_vec()),
@@ -181,16 +202,25 @@ impl NoticeService {
             }
             Err(e) => {
                 debug!("获取WebSocket URL失败: {}", e);
-                self.notify_error_handlers(&format!("获取WebSocket URL失败: {}", e)).await;
+                self.notify_error_handlers(&format!("获取WebSocket URL失败: {}", e))
+                    .await;
                 return Response::error(&format!("获取WebSocket URL失败: {}", e));
             }
         };
 
         // 构建WebSocket URL
         let full_ws_url = if base_url.starts_with("https") {
-            format!("wss://{}/{}", base_url.trim_start_matches("https://"), ws_path)
+            format!(
+                "wss://{}/{}",
+                base_url.trim_start_matches("https://"),
+                ws_path
+            )
         } else {
-            format!("ws://{}/{}", base_url.trim_start_matches("http://"), ws_path)
+            format!(
+                "ws://{}/{}",
+                base_url.trim_start_matches("http://"),
+                ws_path
+            )
         };
 
         // 尝试连接
@@ -259,7 +289,8 @@ impl NoticeService {
 
                             // 直接处理消息
                             if let Ok(json) = serde_json::from_str::<Value>(&text) {
-                                if let Some(command) = json.get("command").and_then(|v| v.as_str()) {
+                                if let Some(command) = json.get("command").and_then(|v| v.as_str())
+                                {
                                     if NoticeMsgType::values().contains(&command) {
                                         let notice_msg = NoticeMsg::from(&json);
                                         let listeners = self_clone.message_listeners.lock().await;
@@ -275,13 +306,14 @@ impl NoticeService {
                         let error_msg = format!("接收WebSocket消息失败: {}", e);
                         debug!("{}", error_msg);
                         self_clone.notify_error_handlers(&error_msg).await;
-                        
+
                         // 延迟重连
                         let self_clone = self_clone.clone();
                         tokio::task::spawn_blocking(move || {
                             let rt = tokio::runtime::Runtime::new().unwrap();
                             rt.block_on(async {
-                                tokio::time::sleep(tokio::time::Duration::from_secs(timeout_value)).await;
+                                tokio::time::sleep(tokio::time::Duration::from_secs(timeout_value))
+                                    .await;
                                 let _ = self_clone.connect(Some(timeout_value)).await;
                             });
                         });
@@ -293,7 +325,7 @@ impl NoticeService {
             // WebSocket连接已关闭
             debug!("WebSocket连接已关闭");
             self_clone.notify_close_handlers().await;
-            
+
             // 延迟重连
             let self_clone = self_clone.clone();
             tokio::task::spawn_blocking(move || {

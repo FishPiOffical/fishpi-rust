@@ -71,7 +71,7 @@ pub struct RedPacketMessage {
     pub oid: String,
     #[serde(rename = "type")]
     pub type_: String,
-    #[serde(rename = "senderId")]
+    #[serde(rename = "senderId", skip_serializing_if = "String::is_empty")]
     pub sender_id: String,
     #[serde(rename = "count")]
     pub count: i32,
@@ -79,12 +79,14 @@ pub struct RedPacketMessage {
     pub got: i32,
     #[serde(rename = "money")]
     pub money: i32,
-    #[serde(rename = "recivers", default)]
+    #[serde(rename = "recivers", skip_serializing_if = "String::is_empty")]
     pub receivers: String,
-    #[serde(rename = "who", default)]
+    #[serde(rename = "who", skip_serializing_if = "Vec::is_empty")]
     pub who: Vec<RedPacketGot>,
-    #[serde(rename = "gesture")]
+    #[serde(rename = "gesture", skip_serializing_if = "Option::is_none")]
     pub gesture: Option<i32>,
+    #[serde(rename = "userName", skip_serializing_if = "String::is_empty")]
+    pub sender_name: String,
 }
 
 /// 红包默认实现
@@ -101,6 +103,7 @@ impl Default for RedPacketMessage {
             receivers: "[]".to_string(),
             who: Vec::new(),
             gesture: None,
+            sender_name: "".to_string(),
         }
     }
 }
@@ -156,6 +159,11 @@ impl From<&Value> for RedPacketMessage {
                 .get("gesture")
                 .and_then(|v| v.as_i64())
                 .map(|v| v as i32),
+            sender_name: data
+                .get("userName")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
         }
     }
 }

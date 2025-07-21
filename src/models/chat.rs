@@ -319,7 +319,13 @@ pub struct MessageInfo {
 
 impl MessageInfo {
     /// 创建新的消息信息实例
-    pub fn new(final_id: String, sender: String, receiver: String, time: String, preview: String) -> Self {
+    pub fn new(
+        final_id: String,
+        sender: String,
+        receiver: String,
+        time: String,
+        preview: String,
+    ) -> Self {
         Self {
             final_id,
             sender,

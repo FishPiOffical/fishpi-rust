@@ -154,25 +154,17 @@ impl ChatRoomMessage {
         }
     }
 
-    // 修改parse_special_content方法，强化对md字段的检查
-    // 在parse_special_content方法中添加代码
+
     pub fn parse_special_content(&mut self) {
         log::debug!("开始解析特殊消息类型: id={}, type={:?}", self.oid, self.message_type);
         
         // 先检查md字段是否包含天气消息
         if let Some(md_content) = &self.md {
-            // log::debug!("检查md字段是否包含天气消息: {}", if md_content.len() > 100 { 
-            //     format!("{}...(已截断)", &md_content[..100]) 
-            // } else { 
-            //     md_content.clone() 
-            // });
-            
             if md_content.contains("\"msgType\":\"weather\"") {
                 if let Ok(md_json) = serde_json::from_str::<serde_json::Value>(md_content) {
                     let weather = WeatherMsg::from(&md_json);
                     self.special_content = SpecialMessageContent::Weather(weather);
                     self.message_type = Some(ChatRoomMessageType::WEATHER.to_string());
-                    // log::warn!("从md字段设置消息类型为天气: {:?}", self.message_type);
                     return;
                 }
             }

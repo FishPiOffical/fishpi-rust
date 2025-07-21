@@ -2,9 +2,10 @@ use crate::api::client::ApiClient;
 use crate::models::user::{ApiResponse, LoginResponse, UserInfo};
 use anyhow::Result;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
+#[derive(Clone, Debug)]
 pub struct UserApi {
     client: ApiClient,
 }
@@ -34,7 +35,10 @@ impl UserApi {
             "mfaCode": mfa_code
         });
 
-        let response = self.client.post::<LoginResponse>("/api/getKey", None, request_body).await?;
+        let response = self
+            .client
+            .post::<LoginResponse>("/api/getKey", None, request_body)
+            .await?;
 
         if response.code == 0 && response.key.is_some() {
             if let Some(token) = &response.key {
@@ -56,7 +60,9 @@ impl UserApi {
             params.insert("apiKey".to_string(), token_value);
         }
 
-        self.client.get::<ApiResponse<UserInfo>>("/api/user", Some(params)).await
+        self.client
+            .get::<ApiResponse<UserInfo>>("/api/user", Some(params))
+            .await
     }
 
     pub async fn get_emotions(&self) -> Result<ApiResponse<HashMap<String, String>>> {
@@ -70,7 +76,9 @@ impl UserApi {
             params.insert("apiKey".to_string(), token_value);
         }
 
-        self.client.get::<ApiResponse<HashMap<String, String>>>("/users/emotions", Some(params)).await
+        self.client
+            .get::<ApiResponse<HashMap<String, String>>>("/users/emotions", Some(params))
+            .await
     }
 
     pub async fn get_liveness(&self) -> Result<f64> {
@@ -186,7 +194,9 @@ impl UserApi {
             }
         }
 
-        self.client.post::<ApiResponse<()>>("/point/transfer", None, request_body).await
+        self.client
+            .post::<ApiResponse<()>>("/point/transfer", None, request_body)
+            .await
     }
 
     pub async fn follow(&self, user_oid: &str, follow: bool) -> Result<ApiResponse<()>> {
@@ -206,6 +216,8 @@ impl UserApi {
             }
         }
 
-        self.client.post::<ApiResponse<()>>("/follow/user", None, request_body).await
+        self.client
+            .post::<ApiResponse<()>>("/follow/user", None, request_body)
+            .await
     }
 }

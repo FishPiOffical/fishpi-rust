@@ -1,5 +1,5 @@
-use crate::api::client::ApiClient;
 use crate::api::ChatroomApi;
+use crate::api::client::ApiClient;
 use crate::models::chatroom::{
     BarrageCost, BarragerMsg, ChatRoomData, ChatRoomDataContent, ChatRoomMessage,
     ChatRoomMessageType, ChatRoomUser, ChatSource, MuteItem, WebSocketMessage,
@@ -17,12 +17,31 @@ pub type ChatroomListener = Box<dyn Fn(ChatRoomData) + Send + Sync>;
 
 #[derive(Clone)]
 pub struct ChatroomService {
-    pub chatroom_api: Arc<ChatroomApi>,
+    pub chatroom_api: ChatroomApi,
     pub connected: Arc<Mutex<bool>>,
     pub message_listeners: Arc<Mutex<Vec<ChatroomListener>>>,
     pub online_users: Arc<Mutex<Vec<ChatRoomUser>>>,
     pub discussing: Arc<Mutex<Option<String>>>,
     pub retry_times: Arc<Mutex<i32>>,
+}
+
+impl std::fmt::Debug for ChatroomService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChatroomService")
+            .field("chatroom_api", &self.chatroom_api)
+            .field("connected", &self.connected)
+            .field(
+                "message_listeners",
+                &format!(
+                    "Arc<Mutex<Vec<ChatroomListener>>> with {} listeners",
+                    "unknown"
+                ),
+            )
+            .field("online_users", &self.online_users)
+            .field("discussing", &self.discussing)
+            .field("retry_times", &self.retry_times)
+            .finish()
+    }
 }
 
 // 为 ChatroomService 实现 Send + Sync
@@ -37,7 +56,7 @@ impl ApiCaller for ChatroomService {
     {
         match f().await {
             Ok(data) => Response::success(data),
-            Err(err) => Response::error(&format!("API调用失败: {}", err))
+            Err(err) => Response::error(&format!("API调用失败: {}", err)),
         }
     }
 
@@ -65,13 +84,13 @@ impl ApiCaller for ChatroomService {
                     .to_string();
                 Response::error(&error_msg)
             }
-            Err(err) => Response::error(&format!("API调用失败: {}", err))
+            Err(err) => Response::error(&format!("API调用失败: {}", err)),
         }
     }
 }
 
 impl ChatroomService {
-    pub fn new(chatroom_api: Arc<ChatroomApi>) -> Self {
+    pub fn new(chatroom_api: ChatroomApi) -> Self {
         Self {
             chatroom_api,
             connected: Arc::new(Mutex::new(false)),
@@ -90,17 +109,17 @@ impl ChatroomService {
             listeners.clear();
             count
         };
-        
+
         {
             let mut users = self.online_users.lock().await;
             users.clear();
         }
-        
+
         {
             let mut topic = self.discussing.lock().await;
             *topic = None;
         }
-        
+
         {
             let mut retries = self.retry_times.lock().await;
             *retries = 0;
@@ -108,11 +127,15 @@ impl ChatroomService {
     }
 
     /// 发送消息
-    pub async fn send<'a>(&self, content: Cow<'a, str>, client: Option<&ChatSource>) -> Response<ApiResponse<()>> {
-        self.call_api(
-            "发送聊天室消息",
-            || self.chatroom_api.send_message(content.as_ref(), client.cloned()),
-        )
+    pub async fn send<'a>(
+        &self,
+        content: Cow<'a, str>,
+        client: Option<&ChatSource>,
+    ) -> Response<ApiResponse<()>> {
+        self.call_api("发送聊天室消息", || {
+            self.chatroom_api
+                .send_message(content.as_ref(), client.cloned())
+        })
         .await
     }
 
@@ -142,12 +165,10 @@ impl ChatroomService {
             *discussing_value = disc.clone();
         }
 
-        self.notify_listeners(
-            ChatRoomData {
-                type_: ChatRoomMessageType::ONLINE.to_string(),
-                data: ChatRoomDataContent::OnlineUsers(users, online_chat_count, disc),
-            },
-        )
+        self.notify_listeners(ChatRoomData {
+            type_: ChatRoomMessageType::ONLINE.to_string(),
+            data: ChatRoomDataContent::OnlineUsers(users, online_chat_count, disc),
+        })
         .await;
     }
 
@@ -158,12 +179,10 @@ impl ChatroomService {
             *discussing_value = Some(new_discuss.clone());
         }
 
-        self.notify_listeners(
-            ChatRoomData {
-                type_: ChatRoomMessageType::DISCUSS_CHANGED.to_string(),
-                data: ChatRoomDataContent::Discuss(new_discuss),
-            },
-        )
+        self.notify_listeners(ChatRoomData {
+            type_: ChatRoomMessageType::DISCUSS_CHANGED.to_string(),
+            data: ChatRoomDataContent::Discuss(new_discuss),
+        })
         .await;
     }
 
@@ -195,13 +214,17 @@ impl ChatroomService {
                             online_chat_count,
                             discussing: disc,
                         } => {
-                            service.handle_online_users(users, online_chat_count, disc).await;
+                            service
+                                .handle_online_users(users, online_chat_count, disc)
+                                .await;
                         }
                         WebSocketMessage::DiscussChanged { new_discuss } => {
                             service.handle_discuss_changed(new_discuss).await;
                         }
                         WebSocketMessage::ChatMessage { message } => {
-                            let message_type = message.message_type.clone()
+                            let message_type = message
+                                .message_type
+                                .clone()
                                 .unwrap_or_else(|| ChatRoomMessageType::MSG.to_string());
 
                             let actual_type = if message.is_redpacket() {
@@ -214,13 +237,12 @@ impl ChatroomService {
                                 message_type
                             };
 
-                            service.notify_listeners(
-                                ChatRoomData {
+                            service
+                                .notify_listeners(ChatRoomData {
                                     type_: actual_type,
                                     data: ChatRoomDataContent::Message(message),
-                                },
-                            )
-                            .await;
+                                })
+                                .await;
                         }
                         WebSocketMessage::Barrager {
                             user_name,
@@ -242,18 +264,23 @@ impl ChatroomService {
                                 user_avatar_url_48,
                                 user_avatar_url_210,
                             };
-                            
-                            service.notify_listeners(
-                                ChatRoomData {
+
+                            service
+                                .notify_listeners(ChatRoomData {
                                     type_: ChatRoomMessageType::BARRAGER.to_string(),
                                     data: ChatRoomDataContent::Barrager(barrager),
-                                },
-                            )
-                            .await;
+                                })
+                                .await;
                         }
-                        WebSocketMessage::RedPacketStatus { 
-                            oid, count, got, who_give, who_got,
-                            avatar_url_20, avatar_url_48, avatar_url_210
+                        WebSocketMessage::RedPacketStatus {
+                            oid,
+                            count,
+                            got,
+                            who_give,
+                            who_got,
+                            avatar_url_20,
+                            avatar_url_48,
+                            avatar_url_210,
                         } => {
                             let status = RedPacketStatusMsg {
                                 oid: oid.clone(),
@@ -265,14 +292,13 @@ impl ChatroomService {
                                 avatar_url_48: avatar_url_48.clone(),
                                 avatar_url_210: avatar_url_210.clone(),
                             };
-                            
-                            service.notify_listeners(
-                                ChatRoomData {
+
+                            service
+                                .notify_listeners(ChatRoomData {
                                     type_: ChatRoomMessageType::RED_PACKET_STATUS.to_string(),
                                     data: ChatRoomDataContent::RedPacketStatus(status),
-                                },
-                            )
-                            .await;
+                                })
+                                .await;
                         }
                         _ => {}
                     }
@@ -302,7 +328,10 @@ impl ChatroomService {
     }
 
     /// 创建WebSocket关闭处理器
-    fn create_close_handler(&self, connected: Arc<Mutex<bool>>) -> impl Fn() + Send + Sync + Clone + 'static {
+    fn create_close_handler(
+        &self,
+        connected: Arc<Mutex<bool>>,
+    ) -> impl Fn() + Send + Sync + Clone + 'static {
         move || {
             let connected = connected.clone();
             tokio::spawn(async move {
@@ -317,7 +346,7 @@ impl ChatroomService {
         if self.is_connected().await {
             return Response::success(());
         }
-        
+
         {
             let listeners = self.message_listeners.lock().await;
             if listeners.is_empty() {
@@ -327,7 +356,7 @@ impl ChatroomService {
 
         let ws_url = match self.chatroom_api.get_websocket_url().await {
             Ok(url) => url,
-            Err(err) => return Response::error(&format!("获取WebSocket地址失败: {}", err))
+            Err(err) => return Response::error(&format!("获取WebSocket地址失败: {}", err)),
         };
 
         let client = ApiClient::new();
@@ -336,7 +365,11 @@ impl ChatroomService {
         let full_url = if ws_url.starts_with("ws") || ws_url.starts_with("wss") {
             ws_url
         } else {
-            let protocol = if base_url.starts_with("https") { "wss" } else { "ws" };
+            let protocol = if base_url.starts_with("https") {
+                "wss"
+            } else {
+                "ws"
+            };
             format!(
                 "{}://{}/{}",
                 protocol,
@@ -349,17 +382,15 @@ impl ChatroomService {
             let mut connected = self.connected.lock().await;
             *connected = true;
         }
-        
+
         let message_handler = self.create_message_handler(
             self.message_listeners.clone(),
             self.online_users.clone(),
             self.discussing.clone(),
         );
 
-        let error_handler = Some(self.create_error_handler(
-            self.retry_times.clone(), 
-            self.connected.clone(),
-        ));
+        let error_handler =
+            Some(self.create_error_handler(self.retry_times.clone(), self.connected.clone()));
 
         let close_handler = Some(self.create_close_handler(self.connected.clone()));
 
@@ -368,7 +399,16 @@ impl ChatroomService {
             params.insert("apiKey".to_string(), token);
         }
 
-        match client.connect_websocket(&full_url, Some(params), message_handler, error_handler, close_handler).await {
+        match client
+            .connect_websocket(
+                &full_url,
+                Some(params),
+                message_handler,
+                error_handler,
+                close_handler,
+            )
+            .await
+        {
             Ok(_) => {
                 let mut retry_count = self.retry_times.lock().await;
                 *retry_count = 0;
@@ -393,12 +433,12 @@ impl ChatroomService {
             }
             *connected = false;
         }
-        
+
         self.clean_all_resources().await;
-        
+
         let client = ApiClient::new();
         let _ = client.close_websocket_connections().await;
-        
+
         tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
         Response::success(())
     }
@@ -407,35 +447,40 @@ impl ChatroomService {
     pub async fn revoke(&self, oid: &str) -> Response<ApiResponse<()>> {
         self.call_api(&format!("撤回聊天室消息: id={}", oid), || async {
             self.chatroom_api.revoke_message(oid).await
-        }).await
+        })
+        .await
     }
 
     /// 发送弹幕
     pub async fn send_barrage(&self, content: &str, color: &str) -> Response<ApiResponse<()>> {
         self.call_api(&format!("发送弹幕: color={}", color), || async {
             self.chatroom_api.send_barrage(content, color).await
-        }).await
+        })
+        .await
     }
 
     /// 获取弹幕发送价格
     pub async fn get_barrage_cost(&self) -> Response<BarrageCost> {
         self.call_api("获取弹幕发送价格", || async {
             self.chatroom_api.get_barrage_cost().await
-        }).await
+        })
+        .await
     }
 
     /// 获取禁言中的成员列表
     pub async fn get_mutes(&self) -> Response<Vec<MuteItem>> {
         self.call_api("获取禁言中成员列表", || async {
             self.chatroom_api.get_mutes().await
-        }).await
+        })
+        .await
     }
 
     /// 获取消息原文
     pub async fn get_raw_message(&self, oid: &str) -> Response<String> {
         self.call_api(&format!("获取消息原文: id={}", oid), || async {
             self.chatroom_api.get_raw_message(oid).await
-        }).await
+        })
+        .await
     }
 
     /// 获取在线用户列表
@@ -465,7 +510,7 @@ impl ChatroomService {
             let _ = self.disconnect().await;
             tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
         }
-        
+
         {
             let mut listeners = self.message_listeners.lock().await;
             listeners.push(Box::new(callback));
@@ -480,12 +525,12 @@ impl ChatroomService {
             let mut connected = self.connected.lock().await;
             *connected = false;
         }
-        
+
         self.clean_all_resources().await;
-        
+
         let client = ApiClient::new();
         let _ = client.close_websocket_connections().await;
-        
+
         Response::success(())
     }
 

@@ -1,21 +1,21 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::sync::Arc;
 
 use crate::api::ArticleApi;
 use crate::models::article::{
-    ArticleDetail, ArticleList, ArticlePost, CommentPost, ResponseResult, ArticleListParams,
-    ArticleListType, ArticleComment,
+    ArticleComment, ArticleDetail, ArticleList, ArticleListParams, ArticleListType, ArticlePost,
+    CommentPost, ResponseResult,
 };
 
 /// 帖子服务
+#[derive(Clone, Debug)]
 pub struct ArticleService {
-    article_api: Arc<ArticleApi>,
+    article_api: ArticleApi,
 }
 
 impl ArticleService {
     /// 创建新的帖子服务实例
-    pub fn new(article_api: Arc<ArticleApi>) -> Self {
+    pub fn new(article_api: ArticleApi) -> Self {
         Self { article_api }
     }
 
@@ -62,7 +62,9 @@ impl ArticleService {
         size: i32,
         tag: Option<&str>,
     ) -> Result<ArticleList> {
-        self.article_api.get_article_list(type_, page, size, tag).await
+        self.article_api
+            .get_article_list(type_, page, size, tag)
+            .await
     }
 
     /// 获取最近帖子列表
@@ -132,7 +134,8 @@ impl ArticleService {
     ///
     /// 返回帖子列表
     pub async fn list_tag_hot(&self, tag_uri: &str, page: i32, size: i32) -> Result<ArticleList> {
-        self.list_by_tag(tag_uri, ArticleListType::HOT, page, size).await
+        self.list_by_tag(tag_uri, ArticleListType::HOT, page, size)
+            .await
     }
 
     /// 按标签查询点赞帖子列表
@@ -143,7 +146,8 @@ impl ArticleService {
     ///
     /// 返回帖子列表
     pub async fn list_tag_good(&self, tag_uri: &str, page: i32, size: i32) -> Result<ArticleList> {
-        self.list_by_tag(tag_uri, ArticleListType::GOOD, page, size).await
+        self.list_by_tag(tag_uri, ArticleListType::GOOD, page, size)
+            .await
     }
 
     /// 按标签查询最近回复帖子列表
@@ -154,7 +158,8 @@ impl ArticleService {
     ///
     /// 返回帖子列表
     pub async fn list_tag_reply(&self, tag_uri: &str, page: i32, size: i32) -> Result<ArticleList> {
-        self.list_by_tag(tag_uri, ArticleListType::REPLY, page, size).await
+        self.list_by_tag(tag_uri, ArticleListType::REPLY, page, size)
+            .await
     }
 
     /// 按标签查询优选帖子列表
@@ -164,8 +169,14 @@ impl ArticleService {
     /// - `size` 每页数量
     ///
     /// 返回帖子列表
-    pub async fn list_tag_perfect(&self, tag_uri: &str, page: i32, size: i32) -> Result<ArticleList> {
-        self.list_by_tag(tag_uri, ArticleListType::PERFECT, page, size).await
+    pub async fn list_tag_perfect(
+        &self,
+        tag_uri: &str,
+        page: i32,
+        size: i32,
+    ) -> Result<ArticleList> {
+        self.list_by_tag(tag_uri, ArticleListType::PERFECT, page, size)
+            .await
     }
 
     /// 按领域查询帖子列表
@@ -183,7 +194,9 @@ impl ArticleService {
         page: i32,
         size: i32,
     ) -> Result<ArticleList> {
-        self.article_api.get_domain_article_list(domain, type_, page, size).await
+        self.article_api
+            .get_domain_article_list(domain, type_, page, size)
+            .await
     }
 
     /// 查询用户帖子列表
@@ -194,7 +207,9 @@ impl ArticleService {
     ///
     /// 返回帖子列表
     pub async fn list_by_user(&self, user: &str, page: i32, size: i32) -> Result<ArticleList> {
-        self.article_api.get_user_article_list(user, page, size).await
+        self.article_api
+            .get_user_article_list(user, page, size)
+            .await
     }
 
     /// 获取帖子详情
@@ -335,13 +350,20 @@ impl ArticleService {
     /// - `page` 页码
     ///
     /// 返回评论列表数据：(普通评论, 精选评论)
-    pub async fn get_comments(&self, article_id: &str, page: i32) -> Result<(Vec<ArticleComment>, Vec<ArticleComment>)> {
-        let comments_data = self.article_api.get_article_comments(article_id, page).await?;
-        
+    pub async fn get_comments(
+        &self,
+        article_id: &str,
+        page: i32,
+    ) -> Result<(Vec<ArticleComment>, Vec<ArticleComment>)> {
+        let comments_data = self
+            .article_api
+            .get_article_comments(article_id, page)
+            .await?;
+
         // 使用新的评论解析函数并返回结果
         Ok(crate::models::comment::parse_comment_data(&comments_data))
     }
-    
+
     /// 获取帖子评论列表（原始JSON数据）
     ///
     /// - `article_id` 帖子ID
@@ -349,6 +371,8 @@ impl ArticleService {
     ///
     /// 返回原始评论JSON数据
     pub async fn get_article_comments(&self, article_id: &str, page: i32) -> Result<Value> {
-        self.article_api.get_article_comments(article_id, page).await
+        self.article_api
+            .get_article_comments(article_id, page)
+            .await
     }
 }

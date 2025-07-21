@@ -10,12 +10,7 @@ documentation = "https://docs.rs/fishpi-rust"
 readme = "README.md"
 keywords = ["fishpi"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "fishpi_rust"
 path = "src/lib.rs"
 
@@ -24,10 +19,14 @@ name = "fishpi-client"
 path = "fishpi-client/src/main.rs"
 
 
+[[bin]]
+name = "client"
+path = "fishpi-client-v2/src/main.rs"
+
 [dependencies]
-reqwest = { version = "0.11", features = ["json", "stream"] }
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"] }
 tokio = { version = "1", features = ["full"] }
-tokio-tungstenite = { version = "0.19", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.19", features = ["connect"] }
 futures = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -51,9 +50,42 @@ rand = "0.9.1"
 thiserror = "2.0.12"
 webbrowser = "1.0"
 html2text = "0.15.0"
-rustyline = "15.0.0"
+rustyline = "16.0.0"
+crossterm = "0.29.0"
+color-eyre = "0.6.3"
+ratatui = "0.29.0"
 
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+# 跨平台编译配置
+# Linux GNU目标 - 静态链接
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# Linux Musl目标 - 静态链接（更小的二进制文件）
+[target.x86_64-unknown-linux-musl]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# Windows GNU目标 - 静态链接
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# Windows MSVC目标 - 静态链接
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# 平台特定的依赖配置
+# Linux平台使用rustls（跨平台编译时）
+[target.'cfg(target_os = "linux")'.dependencies]
+reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls-webpki-roots"], default-features = false }
+tokio-tungstenite = { version = "0.19", features = ["rustls-tls-webpki-roots", "connect"], default-features = false }
+
+# Windows平台使用native-tls（本地开发时）
+[target.'cfg(target_os = "windows")'.dependencies]
+reqwest = { version = "0.11", features = ["json", "stream", "native-tls-vendored"] }
+tokio-tungstenite = { version = "0.19", features = ["native-tls-vendored", "connect"] }
+
+
 

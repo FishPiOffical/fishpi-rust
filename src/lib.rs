@@ -24,15 +24,15 @@ use fishpi_rust::FishPi;
 async fn main() -> anyhow::Result<()> {
     // 创建客户端实例
     let client = FishPi::new();
-    
+
     // 登录 (可选)
     let login_result = client.user.login("username", "password").await?;
     println!("登录成功: {}", login_result.username);
-    
+
     // 获取清风明月列表
     let breezemoons = client.breezemoon.list(1, 20).await?;
     println!("获取到 {} 条清风明月", breezemoons.count);
-    
+
     Ok(())
 }
 ```
@@ -67,8 +67,8 @@ pub mod services;
 pub use models::chatroom::{
     BarrageCost, BarragerMsg, ChatContentType, ChatRoomData, ChatRoomDataContent, ChatRoomMessage,
     ChatRoomMessageType, ChatRoomNode, ChatRoomNodeInfo, ChatRoomQueryMode, ChatRoomUser,
-    ChatSource, MuteItem, WebSocketMessage, WeatherMsg, WeatherMsgData, MusicMsg, 
-    SpecialMessageContent,
+    ChatSource, MusicMsg, MuteItem, SpecialMessageContent, WeatherMsg, WeatherMsgData,
+    WebSocketMessage,
 };
 
 pub use models::chat::{
@@ -88,8 +88,8 @@ pub use models::notice::{
 };
 
 pub use models::article::{
-    ArticleDetail, ArticleList, ArticleListType, ArticlePost, CommentPost, ResponseResult,
-    ArticleListParams, ArticleTag
+    ArticleDetail, ArticleList, ArticleListParams, ArticleListType, ArticlePost, ArticleTag,
+    CommentPost, ResponseResult,
 };
 
 pub use models::breezemoon::{Breezemoon, BreezemoonList, BreezemoonPost, BreezemoonResponse};
@@ -106,9 +106,9 @@ use api::{
     ArticleApi, BreezemoonApi, ChatApi, ChatroomApi, CommentApi, EmojiApi, NoticeApi, RedpacketApi,
     UserApi,
 };
-use std::sync::Arc;
 
 /// FishPi API 客户端主类
+#[derive(Debug, Clone)]
 pub struct FishPi {
     api_client: ApiClient,
     pub user: UserService,
@@ -122,20 +122,26 @@ pub struct FishPi {
     pub emoji: EmojiService,
 }
 
+impl Default for FishPi {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FishPi {
     /// 创建一个新的 FishPi 客户端实例
     pub fn new() -> Self {
         let api_client = ApiClient::new();
 
-        let user_api = Arc::new(UserApi::new(api_client.clone()));
-        let chatroom_api = Arc::new(ChatroomApi::new(api_client.clone()));
-        let redpacket_api = Arc::new(RedpacketApi::new(api_client.clone()));
-        let chat_api = Arc::new(ChatApi::new(api_client.clone()));
-        let notice_api = Arc::new(NoticeApi::new(api_client.clone()));
-        let article_api = Arc::new(ArticleApi::new(api_client.clone()));
-        let comment_api = Arc::new(CommentApi::new(api_client.clone()));
-        let breezemoon_api = Arc::new(BreezemoonApi::new(api_client.clone()));
-        let emoji_api = Arc::new(EmojiApi::new(api_client.clone()));
+        let user_api = UserApi::new(api_client.clone());
+        let chatroom_api = ChatroomApi::new(api_client.clone());
+        let redpacket_api = RedpacketApi::new(api_client.clone());
+        let chat_api = ChatApi::new(api_client.clone());
+        let notice_api = NoticeApi::new(api_client.clone());
+        let article_api = ArticleApi::new(api_client.clone());
+        let comment_api = CommentApi::new(api_client.clone());
+        let breezemoon_api = BreezemoonApi::new(api_client.clone());
+        let emoji_api = EmojiApi::new(api_client.clone());
 
         let user_service = UserService::new(user_api);
         let chatroom_service = ChatroomService::new(chatroom_api);
@@ -172,15 +178,15 @@ impl FishPi {
     pub fn set_base_url(&mut self, base_url: &str) {
         self.api_client = self.api_client.clone().with_base_url(base_url);
 
-        let user_api = Arc::new(UserApi::new(self.api_client.clone()));
-        let chatroom_api = Arc::new(ChatroomApi::new(self.api_client.clone()));
-        let redpacket_api = Arc::new(RedpacketApi::new(self.api_client.clone()));
-        let chat_api = Arc::new(ChatApi::new(self.api_client.clone()));
-        let notice_api = Arc::new(NoticeApi::new(self.api_client.clone()));
-        let article_api = Arc::new(ArticleApi::new(self.api_client.clone()));
-        let comment_api = Arc::new(CommentApi::new(self.api_client.clone()));
-        let breezemoon_api = Arc::new(BreezemoonApi::new(self.api_client.clone()));
-        let emoji_api = Arc::new(EmojiApi::new(self.api_client.clone()));
+        let user_api = UserApi::new(self.api_client.clone());
+        let chatroom_api = ChatroomApi::new(self.api_client.clone());
+        let redpacket_api = RedpacketApi::new(self.api_client.clone());
+        let chat_api = ChatApi::new(self.api_client.clone());
+        let notice_api = NoticeApi::new(self.api_client.clone());
+        let article_api = ArticleApi::new(self.api_client.clone());
+        let comment_api = CommentApi::new(self.api_client.clone());
+        let breezemoon_api = BreezemoonApi::new(self.api_client.clone());
+        let emoji_api = EmojiApi::new(self.api_client.clone());
 
         self.user = UserService::new(user_api);
         self.chatroom = ChatroomService::new(chatroom_api);

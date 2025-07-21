@@ -23,11 +23,22 @@ pub type ChatListener = Box<dyn Fn(ChatMessage) + Send + Sync>;
 /// 私聊服务
 #[derive(Clone)]
 pub struct ChatService {
-    chat_api: Arc<ChatApi>,
+    chat_api: ChatApi,
     websocket_info: Arc<Mutex<HashMap<String, WebsocketInfo>>>,
     message_listeners: Arc<Mutex<HashMap<String, Vec<ChatListener>>>>,
     websocket_senders:
         Arc<Mutex<HashMap<String, futures::channel::mpsc::UnboundedSender<Message>>>>,
+}
+
+impl std::fmt::Debug for ChatService {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChatService")
+            .field("chat_api", &self.chat_api)
+            .field("websocket_info", &self.websocket_info)
+            .field("message_listeners", &"<function pointers>")
+            .field("websocket_senders", &self.websocket_senders)
+            .finish()
+    }
 }
 
 // 为 ChatService 实现 Send + Sync
@@ -77,7 +88,7 @@ impl ApiCaller for ChatService {
 
 impl ChatService {
     /// 创建一个新的私聊服务实例
-    pub fn new(chat_api: Arc<ChatApi>) -> Self {
+    pub fn new(chat_api: ChatApi) -> Self {
         Self {
             chat_api,
             websocket_info: Arc::new(Mutex::new(HashMap::new())),

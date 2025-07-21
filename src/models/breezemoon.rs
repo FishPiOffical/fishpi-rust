@@ -14,7 +14,6 @@ pub struct BreezemoonList {
     pub has_more: bool,
 }
 
-
 /// 清风明月返回
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Breezemoon {
@@ -62,4 +61,4 @@ pub struct BreezemoonResponse {
     pub code: i32,
     /// 返回数据
     pub data: Breezemoon,
-} 
+}

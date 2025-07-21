@@ -2,12 +2,12 @@ use crate::api::client::ApiClient;
 use crate::models::notice::{
     NoticeAt, NoticeComment, NoticeCount, NoticeFollow, NoticeItem, NoticePoint, NoticeSystem,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde_json::Value;
 use std::collections::HashMap;
 
 /// 通知 API 接口
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NoticeApi {
     client: ApiClient,
 }
@@ -29,7 +29,11 @@ impl NoticeApi {
     }
 
     /// 构建带token的请求参数
-    fn build_params(&self, mut params: HashMap<String, String>, token: Option<String>) -> HashMap<String, String> {
+    fn build_params(
+        &self,
+        mut params: HashMap<String, String>,
+        token: Option<String>,
+    ) -> HashMap<String, String> {
         if let Some(token_value) = token {
             params.insert("apiKey".to_string(), token_value);
         }
@@ -41,7 +45,10 @@ impl NoticeApi {
         let token = self.check_token("获取未读消息数").await?;
         let params = self.build_params(HashMap::new(), token);
 
-        let response = self.client.get::<Value>("notifications/unread/count", Some(params)).await?;
+        let response = self
+            .client
+            .get::<Value>("notifications/unread/count", Some(params))
+            .await?;
         Ok(NoticeCount::from(&response))
     }
 
@@ -58,7 +65,10 @@ impl NoticeApi {
         }
         let params = self.build_params(params, token);
 
-        let response = self.client.get::<Value>("api/getNotifications", Some(params)).await?;
+        let response = self
+            .client
+            .get::<Value>("api/getNotifications", Some(params))
+            .await?;
 
         if let Some(code) = response.get("code") {
             if code.as_i64() != Some(0) {
@@ -135,7 +145,10 @@ impl NoticeApi {
         let params = self.build_params(HashMap::new(), token);
 
         self.client
-            .get::<Value>(&format!("notifications/make-read/{}", notice_type), Some(params))
+            .get::<Value>(
+                &format!("notifications/make-read/{}", notice_type),
+                Some(params),
+            )
             .await
     }
 
@@ -144,7 +157,9 @@ impl NoticeApi {
         let token = self.check_token("标记所有通知为已读").await?;
         let params = self.build_params(HashMap::new(), token);
 
-        self.client.get::<Value>("notifications/all-read", Some(params)).await
+        self.client
+            .get::<Value>("notifications/all-read", Some(params))
+            .await
     }
 
     /// 获取 WebSocket 连接 URL

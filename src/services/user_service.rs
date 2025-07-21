@@ -1,12 +1,11 @@
 use crate::api::UserApi;
-use crate::models::user::{Response, UserInfo, LoginResponse, ApiResponse};
+use crate::models::user::{ApiResponse, LoginResponse, Response, UserInfo};
 use crate::services::ApiCaller;
 use std::borrow::Cow;
-use std::sync::Arc;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UserService {
-    user_api: Arc<UserApi>,
+    user_api: UserApi,
 }
 
 unsafe impl Send for UserService {}
@@ -62,21 +61,26 @@ impl ApiCaller for UserService {
 }
 
 impl UserService {
-    pub fn new(user_api: Arc<UserApi>) -> Self {
+    pub fn new(user_api: UserApi) -> Self {
         Self { user_api }
     }
 
     /// 用户登录
-    pub async fn login<'a>(&'a self, username: &'a str, password: Cow<'a, str>, mfa_code: &'a str) -> Response<LoginResponse> {
-        self.call_api(
-            &format!("用户登录: {}", username),
-            || self.user_api.login(username, password.as_ref(), mfa_code),
-        )
+    pub async fn login<'a>(
+        &'a self,
+        username: &'a str,
+        password: Cow<'a, str>,
+        mfa_code: &'a str,
+    ) -> Response<LoginResponse> {
+        self.call_api(&format!("用户登录: {}", username), || {
+            self.user_api.login(username, password.as_ref(), mfa_code)
+        })
         .await
     }
 
     /// 获取用户信息
     pub async fn get_info(&self) -> Response<ApiResponse<UserInfo>> {
-        self.call_api("获取用户信息", || self.user_api.get_user_info()).await
+        self.call_api("获取用户信息", || self.user_api.get_user_info())
+            .await
     }
 }

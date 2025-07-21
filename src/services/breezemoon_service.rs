@@ -1,17 +1,17 @@
 use anyhow::Result;
-use std::sync::Arc;
 
 use crate::api::BreezemoonApi;
 use crate::models::breezemoon::{BreezemoonList, BreezemoonPost};
 
 /// 清风明月服务
+#[derive(Clone, Debug)]
 pub struct BreezemoonService {
-    breezemoon_api: Arc<BreezemoonApi>,
+    breezemoon_api: BreezemoonApi,
 }
 
 impl BreezemoonService {
     /// 创建新的清风明月服务实例
-    pub fn new(breezemoon_api: Arc<BreezemoonApi>) -> Self {
+    pub fn new(breezemoon_api: BreezemoonApi) -> Self {
         Self { breezemoon_api }
     }
 
@@ -38,7 +38,9 @@ impl BreezemoonService {
         page: i32,
         size: i32,
     ) -> Result<BreezemoonList> {
-        self.breezemoon_api.get_user_breezemoon_list(user_id, page, size).await
+        self.breezemoon_api
+            .get_user_breezemoon_list(user_id, page, size)
+            .await
     }
 
     /// 发布清风明月
@@ -74,4 +76,4 @@ impl BreezemoonService {
     pub async fn delete(&self, id: &str) -> Result<()> {
         self.breezemoon_api.delete_breezemoon(id).await
     }
-} 
+}

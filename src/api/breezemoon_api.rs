@@ -1,12 +1,12 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::api::client::ApiClient;
-use crate::models::breezemoon::{BreezemoonList, BreezemoonPost, BreezemoonResponse, Breezemoon};
+use crate::models::breezemoon::{Breezemoon, BreezemoonList, BreezemoonPost, BreezemoonResponse};
 
 /// 清风明月API接口
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BreezemoonApi {
     client: ApiClient,
 }
@@ -29,7 +29,7 @@ impl BreezemoonApi {
         let mut params = HashMap::new();
         params.insert("p".to_string(), page.to_string());
         params.insert("size".to_string(), size.to_string());
-        
+
         if let Some(token) = self.client.get_token().await {
             params.insert("apiKey".to_string(), token);
         }
@@ -42,24 +42,25 @@ impl BreezemoonApi {
 
         // 检查API响应结构
         if result["breezemoons"].is_array() {
-            
             // 从breezemoons数组直接解析
-            let breezemoons: Vec<Breezemoon> = serde_json::from_value(result["breezemoons"].clone())
-                .map_err(|e| anyhow!("解析清风明月列表数据失败: {}", e))?;
-            
+            let breezemoons: Vec<Breezemoon> =
+                serde_json::from_value(result["breezemoons"].clone())
+                    .map_err(|e| anyhow!("解析清风明月列表数据失败: {}", e))?;
+
             // 手动构建BreezemoonList
             let breezemoon_list = BreezemoonList {
                 count: breezemoons.len() as i32,
                 breezemoons,
                 has_more: false, // 默认false，因为API没有返回该字段
             };
-            
-            return Ok(breezemoon_list);
+
+            Ok(breezemoon_list)
         } else {
-            let breezemoon_list: BreezemoonList = serde_json::from_value(result["breezemoons"].clone())
-                .map_err(|e| anyhow!("解析清风明月列表数据失败: {}", e))?;
-            
-            return Ok(breezemoon_list);
+            let breezemoon_list: BreezemoonList =
+                serde_json::from_value(result["breezemoons"].clone())
+                    .map_err(|e| anyhow!("解析清风明月列表数据失败: {}", e))?;
+
+            Ok(breezemoon_list)
         }
     }
 
@@ -81,7 +82,7 @@ impl BreezemoonApi {
         let mut params = HashMap::new();
         params.insert("p".to_string(), page.to_string());
         params.insert("size".to_string(), size.to_string());
-        
+
         if let Some(token) = self.client.get_token().await {
             params.insert("apiKey".to_string(), token);
         }
@@ -160,7 +161,10 @@ impl BreezemoonApi {
             params.insert("apiKey".to_string(), token);
         }
 
-        let result = self.client.delete::<Value>(&path, Some(params), None).await?;
+        let result = self
+            .client
+            .delete::<Value>(&path, Some(params), None)
+            .await?;
 
         if result["code"] != 0 {
             let error_msg = result["msg"].as_str().unwrap_or("未知错误").to_string();
@@ -169,4 +173,4 @@ impl BreezemoonApi {
 
         Ok(())
     }
-} 
+}

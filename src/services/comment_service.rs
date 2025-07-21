@@ -1,19 +1,17 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::sync::Arc;
 
-use crate::api::comment_api::CommentApi;
+use crate::api::CommentApi;
 use crate::models::article::{ArticleComment, CommentPost, ResponseResult};
 use crate::models::comment;
 
-/// 评论服务
+#[derive(Clone, Debug)]
 pub struct CommentService {
-    comment_api: Arc<CommentApi>,
+    comment_api: CommentApi,
 }
 
 impl CommentService {
-    /// 创建评论服务
-    pub fn new(comment_api: Arc<CommentApi>) -> Self {
+    pub fn new(comment_api: CommentApi) -> Self {
         Self { comment_api }
     }
 
@@ -63,13 +61,16 @@ impl CommentService {
     pub async fn delete(&self, id: &str) -> Result<String> {
         self.comment_api.remove(id).await
     }
-    
+
     /// 解析评论数据
     ///
     /// - `comments_data` 评论数据
-    /// 
+    ///
     /// 返回 (普通评论, 精选评论)
-    pub fn parse_comment_data(&self, comments_data: &Value) -> (Vec<ArticleComment>, Vec<ArticleComment>) {
+    pub fn parse_comment_data(
+        &self,
+        comments_data: &Value,
+    ) -> (Vec<ArticleComment>, Vec<ArticleComment>) {
         comment::parse_comment_data(comments_data)
     }
-} 
+}

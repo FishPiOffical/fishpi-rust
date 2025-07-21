@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 /// 私聊API
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChatApi {
     client: ApiClient,
 }

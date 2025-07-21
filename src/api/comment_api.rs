@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Result};
-use serde_json::{json, Value};
 use crate::api::client::ApiClient;
 use crate::models::article::{CommentPost, ResponseResult};
+use anyhow::{Result, anyhow};
+use serde_json::{Value, json};
 
 /// 评论API
+#[derive(Clone, Debug)]
 pub struct CommentApi {
     client: ApiClient,
 }
@@ -58,7 +59,10 @@ impl CommentApi {
             }
         }
 
-        let result: Value = self.client.put(&format!("comment/{}", id), None, json_data).await?;
+        let result: Value = self
+            .client
+            .put(&format!("comment/{}", id), None, json_data)
+            .await?;
 
         if result["code"] != 0 {
             let error_msg = result["msg"].as_str().unwrap_or("未知错误").to_string();
@@ -156,4 +160,4 @@ impl CommentApi {
 
         Ok(result["commentId"].as_str().unwrap_or("").to_string())
     }
-} 
+}

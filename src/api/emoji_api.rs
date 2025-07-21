@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -6,7 +6,7 @@ use crate::api::client::ApiClient;
 use crate::models::emoji::EmojiList;
 
 /// 表情API接口
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EmojiApi {
     client: ApiClient,
 }
@@ -40,4 +40,4 @@ impl EmojiApi {
 
         Ok(emoji_list)
     }
-} 
+}

@@ -41,4 +41,4 @@ pub struct Emoji {
 pub struct EmojiList {
     /// 表情分类列表
     pub data: Vec<EmojiCategory>,
-} 
+}

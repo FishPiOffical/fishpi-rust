@@ -1,18 +1,17 @@
 use crate::api::RedpacketApi;
 use crate::models::redpacket::{GestureType, RedPacketInfo, RedPacketMessage, RedPacketType};
 use crate::models::user::Response;
-use std::sync::Arc;
 use log::debug;
 
 /// 红包服务
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RedpacketService {
-    redpacket_api: Arc<RedpacketApi>,
+    redpacket_api: RedpacketApi,
 }
 
 impl RedpacketService {
     /// 创建一个新的红包服务
-    pub fn new(redpacket_api: Arc<RedpacketApi>) -> Self {
+    pub fn new(redpacket_api: RedpacketApi) -> Self {
         Self { redpacket_api }
     }
 
@@ -30,7 +29,7 @@ impl RedpacketService {
                     debug!("红包已全部被领取");
                 }
                 Response::success(info)
-            },
+            }
             Err(err) => {
                 let err_msg = err.to_string();
                 if err_msg.contains("已被领完") || err_msg.contains("已领取") {
@@ -43,7 +42,7 @@ impl RedpacketService {
                 } else {
                     Response::error(&format!("打开红包失败: {}", err))
                 }
-            },
+            }
         }
     }
 
@@ -76,10 +75,13 @@ impl RedpacketService {
                         format!("(未知手势:{})", g)
                     };
                     let user_gesture = gesture.name();
-                    debug!("猜拳结果: 红包发送者出 {} vs 您出 {}", host_gesture, user_gesture);
+                    debug!(
+                        "猜拳结果: 红包发送者出 {} vs 您出 {}",
+                        host_gesture, user_gesture
+                    );
                 }
                 Response::success(info)
-            },
+            }
             Err(err) => {
                 let err_msg = err.to_string();
                 if err_msg.contains("已被领完") || err_msg.contains("已领取") {
@@ -92,7 +94,7 @@ impl RedpacketService {
                 } else {
                     Response::error(&format!("打开猜拳红包失败: {}", err))
                 }
-            },
+            }
         }
     }
 
@@ -238,10 +240,8 @@ impl RedpacketService {
                     }
                 }
                 response.into()
-            },
-            Err(err) => {
-                Response::error(&format!("发送红包失败: {}", err))
-            },
+            }
+            Err(err) => Response::error(&format!("发送红包失败: {}", err)),
         }
     }
 }

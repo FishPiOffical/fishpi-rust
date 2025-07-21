@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use serde_json::Value;
+use std::collections::HashMap;
 
 use crate::models::user::Metal;
 
 /// 帖子发布信息
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ArticlePost {
     /// 帖子标题
     #[serde(rename = "articleTitle", default)]
@@ -49,7 +48,6 @@ pub struct ArticlePost {
 
     /// 是否匿名
     #[serde(rename = "articleAnonymous", default)]
- 
     pub anonymous: i32,
 
     /// 提问悬赏积分
@@ -59,7 +57,6 @@ pub struct ArticlePost {
     )]
     pub offer_point: Option<i32>,
 }
-
 
 /// 帖子标签
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,7 +127,6 @@ pub struct ArticleTag {
 
     /// 是否展示广告
     #[serde(rename = "tagShowSideAd", default)]
- 
     pub show_side_ad: i32,
 
     /// 标签状态
@@ -207,7 +203,7 @@ impl Default for ArticleStatus {
 }
 
 /// 帖子作者/评论作者
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ArticleAuthor {
     /// 用户是否在线
     #[serde(rename = "userOnlineFlag", default)]
@@ -259,7 +255,6 @@ pub struct ArticleAuthor {
 
     /// 是否启用站外链接跳转页面
     #[serde(rename = "userForwardPageStatus", default)]
- 
     pub is_enable_forward_page: i32,
 
     /// 是否公开 UA 信息
@@ -308,7 +303,6 @@ pub struct ArticleAuthor {
 
     /// 是否加入积分排行
     #[serde(rename = "userJoinPointRank", default)]
- 
     pub is_join_point_rank: i32,
 
     /// 用户最后登录时间
@@ -321,7 +315,6 @@ pub struct ArticleAuthor {
 
     /// 头像查看模式
     #[serde(rename = "userAvatarViewMode", default)]
- 
     pub user_avatar_view_mode: i32,
 
     /// 用户状态
@@ -334,7 +327,6 @@ pub struct ArticleAuthor {
 
     /// 是否公开关注帖子列表
     #[serde(rename = "userWatchingArticleStatus", default)]
- 
     pub watching_article_status: i32,
 
     /// 上次回帖时间
@@ -378,17 +370,11 @@ pub struct ArticleAuthor {
     pub following_article_status: i32,
 
     /// 是否启用键盘快捷键
-    #[serde(
-        rename = "userKeyboardShortcutsStatus",
-        default
-    )]
+    #[serde(rename = "userKeyboardShortcutsStatus", default)]
     pub keyboard_shortcuts_status: i32,
 
     /// 是否回帖后自动关注帖子
-    #[serde(
-        rename = "userReplyWatchArticleStatus",
-        default
-    )]
+    #[serde(rename = "userReplyWatchArticleStatus", default)]
     pub reply_watch_article_status: i32,
 
     /// 回帖浏览模式
@@ -441,7 +427,6 @@ pub struct ArticleAuthor {
 
     /// 是否公开 IP 地理信息
     #[serde(rename = "userGeoStatus", default)]
- 
     pub geo_status: i32,
 
     /// 最长连续签到起始日
@@ -454,12 +439,10 @@ pub struct ArticleAuthor {
 
     /// 是否启用 Web 通知
     #[serde(rename = "userNotifyStatus", default)]
- 
     pub notify_status: i32,
 
     /// 公开关注用户列表
     #[serde(rename = "userFollowingUserStatus", default)]
- 
     pub following_user_status: i32,
 
     /// 帖子数
@@ -479,7 +462,6 @@ pub struct ArticleAuthor {
     pub mbti: String,
 }
 
-
 impl ArticleAuthor {
     pub fn name(&self) -> &str {
         if self.nickname.is_empty() {
@@ -494,77 +476,6 @@ impl ArticleAuthor {
             self.user_name.clone()
         } else {
             format!("{}({})", self.nickname, self.user_name)
-        }
-    }
-}
-
-impl Default for ArticleAuthor {
-    fn default() -> Self {
-        Self {
-            is_online: false,
-            online_minute: 0,
-            point_status: 0,
-            follower_status: 0,
-            guide_step: 0,
-            online_status: 0,
-            current_checkin_streak_start: 0,
-            is_auto_blur: 0,
-            tags: String::new(),
-            comment_status: 0,
-            timezone: String::new(),
-            home_page: String::new(),
-            is_enable_forward_page: 0,
-            user_ua_status: 0,
-            user_index_redirect_url: String::new(),
-            latest_article_time: 0,
-            tag_count: 0,
-            nickname: String::new(),
-            list_view_mode: 0,
-            longest_checkin_streak: 0,
-            avatar_type: 0,
-            sub_mail_send_time: 0,
-            update_time: 0,
-            sub_mail_status: 0,
-            is_join_point_rank: 0,
-            latest_login_time: 0,
-            user_app_role: 0,
-            user_avatar_view_mode: 0,
-            user_status: 0,
-            longest_checkin_streak_end: 0,
-            watching_article_status: 0,
-            latest_cmt_time: 0,
-            province: String::new(),
-            current_checkin_streak: 0,
-            user_no: 0,
-            avatar_url: String::new(),
-            following_tag_status: 0,
-            user_language: String::new(),
-            is_join_used_point_rank: 0,
-            current_checkin_streak_end: 0,
-            following_article_status: 0,
-            keyboard_shortcuts_status: 0,
-            reply_watch_article_status: 0,
-            comment_view_mode: 0,
-            breezemoon_status: 0,
-            user_checkin_time: 0,
-            used_point: 0,
-            article_status: 0,
-            user_point: 0,
-            comment_count: 0,
-            user_intro: String::new(),
-            user_mobile_skin: String::new(),
-            list_page_size: 0,
-            o_id: String::new(),
-            user_name: String::new(),
-            geo_status: 0,
-            longest_checkin_streak_start: 0,
-            user_skin: String::new(),
-            notify_status: 0,
-            following_user_status: 0,
-            article_count: 0,
-            user_role: String::new(),
-            sys_metal: Vec::new(),
-            mbti: String::new(),
         }
     }
 }
@@ -740,8 +651,7 @@ impl Default for ArticleComment {
 }
 
 /// 分页信息
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Pagination {
     /// 总分页数
     #[serde(rename = "paginationPageCount", default)]
@@ -751,7 +661,6 @@ pub struct Pagination {
     #[serde(rename = "paginationPageNums", default)]
     pub page_nums: Vec<i32>,
 }
-
 
 /// 帖子类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -777,12 +686,12 @@ where
 {
     // 使用Value枚举作为中间表示
     let value = serde_json::Value::deserialize(deserializer)?;
-    
+
     // 检查值的类型
     match value {
         // 如果是字符串，直接返回
         serde_json::Value::String(s) => Ok(s),
-        
+
         // 如果是空值或不兼容类型，返回空字符串
         _ => Ok(String::new()),
     }
@@ -795,17 +704,15 @@ where
 {
     // 使用Value枚举作为中间表示
     let value = serde_json::Value::deserialize(deserializer)?;
-    
+
     // 检查值的类型
     match value {
         // 如果是对象，尝试解析为ArticleAuthor
-        serde_json::Value::Object(_) => {
-            match serde_json::from_value(value) {
-                Ok(author) => Ok(author),
-                Err(_) => Ok(ArticleAuthor::default())
-            }
+        serde_json::Value::Object(_) => match serde_json::from_value(value) {
+            Ok(author) => Ok(author),
+            Err(_) => Ok(ArticleAuthor::default()),
         },
-        
+
         // 如果是null或数字0或任何其他类型，返回默认值
         _ => Ok(ArticleAuthor::default()),
     }
@@ -818,12 +725,12 @@ where
 {
     // 使用Value枚举作为中间表示
     let value = serde_json::Value::deserialize(deserializer)?;
-    
+
     // 如果不是数组，返回空向量
     if !value.is_array() {
         return Ok(Vec::new());
     }
-    
+
     // 处理数组
     let mut result = Vec::new();
     if let Some(arr) = value.as_array() {
@@ -837,7 +744,7 @@ where
             }
         }
     }
-    
+
     Ok(result)
 }
 
@@ -1153,42 +1060,118 @@ pub struct ArticleDetail {
 impl ArticleDetail {
     /// 从 JSON 数据解析文章详情
     pub fn from_json(data: &Value) -> Result<Self, serde_json::Error> {
-        let mut article = ArticleDetail::default();
-        
-        article.o_id = data["oId"].as_str().unwrap_or_default().to_string();
-        article.title = data["articleTitle"].as_str().unwrap_or_default().to_string();
-        article.content = data["articleContent"].as_str().unwrap_or_default().to_string();
-        article.author_name = data["articleAuthorName"].as_str().unwrap_or_default().to_string();
-        article.author_id = data["articleAuthorId"].as_str().unwrap_or_default().to_string();
-        article.tags = data["articleTags"].as_str().unwrap_or_default().to_string();
-        article.time_ago = data["timeAgo"].as_str().unwrap_or_default().to_string();
-        article.create_time_str = data["articleCreateTimeStr"].as_str().unwrap_or_default().to_string();
-        article.update_time_str = data["articleUpdateTimeStr"].as_str().unwrap_or_default().to_string();
-        article.permalink = data["articlePermalink"].as_str().unwrap_or_default().to_string();
-        
-        article.view_cnt = data["articleViewCount"].as_i64().unwrap_or(0) as i32;
-        article.comment_cnt = data["articleCommentCount"].as_i64().unwrap_or(0) as i32;
-        article.thank_cnt = data["articleThankCnt"].as_i64().unwrap_or(0) as i32;
-        article.good_cnt = data["articleGoodCnt"].as_i64().unwrap_or(0) as i32;
-        article.bad_cnt = data["articleBadCnt"].as_i64().unwrap_or(0) as i32;
-        
-        article.type_ = match data["articleType"].as_i64().unwrap_or(0) {
-            0 => ArticleType::Normal,
-            1 => ArticleType::Private,
-            2 => ArticleType::Broadcast,
-            3 => ArticleType::Thought,
-            5 => ArticleType::Question,
-            _ => ArticleType::Unknown,
-        };
-        
-        article.offered = data["offered"].as_bool().unwrap_or(false);
-        
-        if !data["pagination"].is_null() {
-            article.pagination = serde_json::from_value(data["pagination"].clone()).ok();
-        }
-        
-        Ok(article)
+        Ok(ArticleDetail {
+            o_id: data["oId"].as_str().unwrap_or_default().to_string(),
+            title: data["articleTitle"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            content: data["articleContent"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            author_name: data["articleAuthorName"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            author_id: data["articleAuthorId"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            tags: data["articleTags"].as_str().unwrap_or_default().to_string(),
+            time_ago: data["timeAgo"].as_str().unwrap_or_default().to_string(),
+            create_time_str: data["articleCreateTimeStr"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            update_time_str: data["articleUpdateTimeStr"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            permalink: data["articlePermalink"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string(),
+            view_cnt: data["articleViewCount"].as_i64().unwrap_or(0) as i32,
+            comment_cnt: data["articleCommentCount"].as_i64().unwrap_or(0) as i32,
+            thank_cnt: data["articleThankCnt"].as_i64().unwrap_or(0) as i32,
+            good_cnt: data["articleGoodCnt"].as_i64().unwrap_or(0) as i32,
+            bad_cnt: data["articleBadCnt"].as_i64().unwrap_or(0) as i32,
+            type_: match data["articleType"].as_i64().unwrap_or(0) {
+                0 => ArticleType::Normal,
+                1 => ArticleType::Private,
+                2 => ArticleType::Broadcast,
+                3 => ArticleType::Thought,
+                5 => ArticleType::Question,
+                _ => ArticleType::Unknown,
+            },
+            offered: data["offered"].as_bool().unwrap_or(false),
+            pagination: if !data["pagination"].is_null() {
+                serde_json::from_value(data["pagination"].clone()).ok()
+            } else {
+                None
+            },
+            ..Default::default()
+        })
     }
+    // pub fn from_json(data: &Value) -> Result<Self, serde_json::Error> {
+    //     let mut article = ArticleDetail::default();
+
+    //     article.o_id = data["oId"].as_str().unwrap_or_default().to_string();
+    //     article.title = data["articleTitle"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.content = data["articleContent"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.author_name = data["articleAuthorName"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.author_id = data["articleAuthorId"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.tags = data["articleTags"].as_str().unwrap_or_default().to_string();
+    //     article.time_ago = data["timeAgo"].as_str().unwrap_or_default().to_string();
+    //     article.create_time_str = data["articleCreateTimeStr"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.update_time_str = data["articleUpdateTimeStr"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+    //     article.permalink = data["articlePermalink"]
+    //         .as_str()
+    //         .unwrap_or_default()
+    //         .to_string();
+
+    //     article.view_cnt = data["articleViewCount"].as_i64().unwrap_or(0) as i32;
+    //     article.comment_cnt = data["articleCommentCount"].as_i64().unwrap_or(0) as i32;
+    //     article.thank_cnt = data["articleThankCnt"].as_i64().unwrap_or(0) as i32;
+    //     article.good_cnt = data["articleGoodCnt"].as_i64().unwrap_or(0) as i32;
+    //     article.bad_cnt = data["articleBadCnt"].as_i64().unwrap_or(0) as i32;
+
+    //     article.type_ = match data["articleType"].as_i64().unwrap_or(0) {
+    //         0 => ArticleType::Normal,
+    //         1 => ArticleType::Private,
+    //         2 => ArticleType::Broadcast,
+    //         3 => ArticleType::Thought,
+    //         5 => ArticleType::Question,
+    //         _ => ArticleType::Unknown,
+    //     };
+
+    //     article.offered = data["offered"].as_bool().unwrap_or(false);
+
+    //     if !data["pagination"].is_null() {
+    //         article.pagination = serde_json::from_value(data["pagination"].clone()).ok();
+    //     }
+
+    //     Ok(article)
+    // }
 }
 
 impl Default for ArticleDetail {
@@ -1270,8 +1253,7 @@ impl Default for ArticleDetail {
 }
 
 /// 帖子列表
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ArticleList {
     /// 帖子列表
     #[serde(rename = "articles", default)]
@@ -1370,16 +1352,16 @@ impl ArticleListType {
 pub struct ArticleListParams {
     /// 页码
     pub page: i32,
-    
+
     /// 每页数量
     pub size: i32,
-    
+
     /// 查询类型 (recent, hot, good, reply, perfect)
     pub list_type: String,
-    
+
     /// 标签URI (可选)
     pub tag: Option<String>,
-    
+
     /// 领域URI (可选)
     pub domain: Option<String>,
 }
@@ -1465,8 +1447,7 @@ impl Default for ArticleListParams {
 }
 
 /// 评论发布
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CommentPost {
     /// 帖子 Id
     #[serde(rename = "articleId", default)]
@@ -1489,10 +1470,8 @@ pub struct CommentPost {
     pub reply_id: String,
 }
 
-
 /// API响应结果
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ResponseResult {
     pub code: i32,
     #[serde(default)]
@@ -1502,13 +1481,13 @@ pub struct ResponseResult {
 }
 
 /// 帮助函数：将布尔值或整数值反序列化为布尔值
-/// 
+///
 /// 这个函数可以处理以下几种情况：
 /// - 布尔值：`true`/`false` 直接转换
 /// - 整数值：`0` => `false`, 非0 => `true`
 /// - 字符串：`"true"`/`"1"` => `true`, `"false"`/`"0"` => `false`
 /// - null值：返回false
-/// 
+///
 /// 在API中，布尔字段有时以布尔值返回，有时以整数值返回。
 /// 这个函数使我们可以统一处理这两种情况，保持代码的一致性。
 fn deserialize_bool_or_int<'de, D>(deserializer: D) -> Result<bool, D::Error>
@@ -1517,12 +1496,12 @@ where
 {
     // 使用Value枚举作为中间表示
     let value = serde_json::Value::deserialize(deserializer)?;
-    
+
     // 检查值的类型
     match value {
         // 如果是布尔值，直接返回
         serde_json::Value::Bool(b) => Ok(b),
-        
+
         // 如果是数字，转换为布尔值（0 = false, 非0 = true）
         serde_json::Value::Number(n) => {
             if let Some(num) = n.as_i64() {
@@ -1534,8 +1513,8 @@ where
                 // 无法转换的数字视为false
                 Ok(false)
             }
-        },
-        
+        }
+
         // 如果是字符串，尝试解析为布尔值
         serde_json::Value::String(s) => {
             let lower_s = s.to_lowercase();
@@ -1550,11 +1529,10 @@ where
                     Err(_) => Ok(false),
                 }
             }
-        },
-        
+        }
+
         // 处理null和其他类型都视为false
         serde_json::Value::Null => Ok(false),
         _ => Ok(false),
     }
 }
-

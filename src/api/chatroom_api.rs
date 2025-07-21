@@ -4,10 +4,10 @@ use crate::models::chatroom::{
     MuteItem,
 };
 use crate::models::user::ApiResponse;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use regex::Regex;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// 聊天室节点信息
@@ -31,7 +31,7 @@ pub struct NodeResponse {
 }
 
 /// 聊天室API接口
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ChatroomApi {
     client: ApiClient,
 }
@@ -53,7 +53,11 @@ impl ChatroomApi {
     }
 
     /// 构建带token的请求参数
-    fn build_params(&self, mut params: HashMap<String, String>, token: Option<String>) -> HashMap<String, String> {
+    fn build_params(
+        &self,
+        mut params: HashMap<String, String>,
+        token: Option<String>,
+    ) -> HashMap<String, String> {
         if let Some(token_value) = token {
             params.insert("apiKey".to_string(), token_value);
         }
@@ -160,7 +164,11 @@ impl ChatroomApi {
         });
         let request_body = self.build_request_body(request_body, token);
 
-        match self.client.post::<ApiResponse<()>>("/chat-room/send", None, request_body.clone()).await {
+        match self
+            .client
+            .post::<ApiResponse<()>>("/chat-room/send", None, request_body.clone())
+            .await
+        {
             Ok(response) => Ok(response),
             Err(e) => {
                 // 检查是否是连接错误
@@ -169,7 +177,9 @@ impl ChatroomApi {
                     // 连接错误时等待更长时间
                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                     // 重试一次
-                    self.client.post::<ApiResponse<()>>("/chat-room/send", None, request_body).await
+                    self.client
+                        .post::<ApiResponse<()>>("/chat-room/send", None, request_body)
+                        .await
                 } else {
                     Err(e)
                 }
@@ -316,10 +326,7 @@ impl ChatroomApi {
             .await?;
 
         if response.code != 0 || response.data.is_none() {
-            return Err(anyhow!(
-                "获取聊天室WebSocket地址失败: {:?}",
-                response.msg
-            ));
+            return Err(anyhow!("获取聊天室WebSocket地址失败: {:?}", response.msg));
         }
 
         Ok(response.data.unwrap())
@@ -340,10 +347,7 @@ impl ChatroomApi {
             .await?;
 
         if response.code != 0 || response.data.is_none() {
-            return Err(anyhow!(
-                "获取聊天室节点信息失败: {:?}",
-                response.msg
-            ));
+            return Err(anyhow!("获取聊天室节点信息失败: {:?}", response.msg));
         }
 
         // 如果返回了新的apiKey，更新客户端token

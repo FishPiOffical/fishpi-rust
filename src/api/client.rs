@@ -1,7 +1,7 @@
 use anyhow::Result;
 use futures::StreamExt;
 use log;
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
+use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue, USER_AGENT};
 use reqwest::{Client, ClientBuilder, Response as ReqwestResponse};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -24,11 +24,17 @@ lazy_static::lazy_static! {
     static ref WEBSOCKET_TASKS: Arc<Mutex<Vec<JoinHandle<()>>>> = Arc::new(Mutex::new(Vec::new()));
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ApiClient {
     client: Client,
     base_url: String,
     token: Arc<Mutex<Option<String>>>,
+}
+
+impl Default for ApiClient {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ApiClient {
@@ -41,7 +47,7 @@ impl ApiClient {
             std::env::set_var("NO_PROXY", "*");
             std::env::set_var("no_proxy", "*");
         }
-        
+
         let mut default_headers = HeaderMap::new();
         default_headers.insert(USER_AGENT, HeaderValue::from_static(DEFAULT_USER_AGENT));
 
@@ -149,7 +155,8 @@ impl ApiClient {
         params: Option<HashMap<String, String>>,
         data: Value,
     ) -> Result<T> {
-        self.request(reqwest::Method::POST, path, params, Some(data)).await
+        self.request(reqwest::Method::POST, path, params, Some(data))
+            .await
     }
 
     pub async fn put<T: DeserializeOwned>(
@@ -158,7 +165,8 @@ impl ApiClient {
         params: Option<HashMap<String, String>>,
         data: Value,
     ) -> Result<T> {
-        self.request(reqwest::Method::PUT, path, params, Some(data)).await
+        self.request(reqwest::Method::PUT, path, params, Some(data))
+            .await
     }
 
     pub async fn delete<T: DeserializeOwned>(
@@ -167,19 +175,20 @@ impl ApiClient {
         params: Option<HashMap<String, String>>,
         data: Option<Value>,
     ) -> Result<T> {
-        self.request(reqwest::Method::DELETE, path, params, data).await
+        self.request(reqwest::Method::DELETE, path, params, data)
+            .await
     }
 
     /// 关闭所有WebSocket连接
     pub async fn close_websocket_connections(&self) -> Result<()> {
         let mut tasks = WEBSOCKET_TASKS.lock().await;
         let mut completed = 0;
-        
+
         for task in tasks.iter() {
             task.abort();
             completed += 1;
         }
-        
+
         tasks.clear();
         log::debug!("已终止 {} 个WebSocket连接任务", completed);
         Ok(())
@@ -190,7 +199,11 @@ impl ApiClient {
         if url.starts_with("ws") || url.starts_with("wss") {
             url.to_string()
         } else {
-            let protocol = if self.base_url.starts_with("https") { "wss" } else { "ws" };
+            let protocol = if self.base_url.starts_with("https") {
+                "wss"
+            } else {
+                "ws"
+            };
             format!(
                 "{}://{}/{}",
                 protocol,
@@ -241,7 +254,7 @@ impl ApiClient {
     ) -> Result<()> {
         let _ = self.close_websocket_connections().await;
         tokio::time::sleep(Duration::from_millis(WEBSOCKET_CLEANUP_DELAY)).await;
-        
+
         let mut full_url = self.create_websocket_url(url);
         if let Some(params) = params {
             full_url = Self::add_params_to_url(&full_url, params);
@@ -261,7 +274,8 @@ impl ApiClient {
                             on_message.clone(),
                             on_error.clone(),
                             on_close.clone(),
-                        ).await;
+                        )
+                        .await;
                     }
                     Err(e) => {
                         if let Some(on_error) = on_error {
@@ -276,7 +290,7 @@ impl ApiClient {
                 on_close();
             }
         });
-        
+
         {
             let mut tasks = WEBSOCKET_TASKS.lock().await;
             tasks.push(task_handle);
@@ -319,4 +333,3 @@ impl ApiClient {
         result
     }
 }
-

@@ -2,14 +2,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 // 应用角色
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum UserAppRole {
     #[default]
     Hack = 0,
     Artist = 1,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetalAttr {

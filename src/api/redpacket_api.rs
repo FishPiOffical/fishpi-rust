@@ -2,10 +2,10 @@ use crate::api::client::ApiClient;
 use crate::models::redpacket::{RedPacketInfo, RedPacketMessage};
 use crate::models::user::ApiResponse;
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// 红包相关API
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RedpacketApi {
     client: ApiClient,
 }
@@ -24,11 +24,7 @@ impl RedpacketApi {
     ///
     /// # 返回
     /// * `Result<RedPacketInfo>` - 红包信息响应结果
-    pub async fn open_redpacket(
-        &self,
-        oid: &str,
-        gesture: Option<i32>,
-    ) -> Result<RedPacketInfo> {
+    pub async fn open_redpacket(&self, oid: &str, gesture: Option<i32>) -> Result<RedPacketInfo> {
         let token = self.client.get_token().await;
         if token.is_none() {
             return Err(anyhow::anyhow!("未登录，请先登录"));
@@ -74,8 +70,6 @@ impl RedpacketApi {
         });
 
         // 发送请求
-        self.client
-            .post("chat-room/send", None, request_data)
-            .await
+        self.client.post("chat-room/send", None, request_data).await
     }
 }
