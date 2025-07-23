@@ -15,9 +15,9 @@ name = "fishpi_rust"
 path = "src/lib.rs"
 doctest = false
 
-[[bin]]
-name = "fishpi-client"
-path = "fishpi-client/src/main.rs"
+# [[bin]]
+# name = "fishpi-client"
+# path = "fishpi-client/src/main.rs"
 
 
 [[bin]]
