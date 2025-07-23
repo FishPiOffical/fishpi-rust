@@ -13,6 +13,7 @@ keywords = ["fishpi"]
 [lib]
 name = "fishpi_rust"
 path = "src/lib.rs"
+doctest = false
 
 # [[bin]]
 # name = "fishpi-client"
