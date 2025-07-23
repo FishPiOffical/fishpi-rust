@@ -14,9 +14,9 @@ keywords = ["fishpi"]
 name = "fishpi_rust"
 path = "src/lib.rs"
 
-[[bin]]
-name = "fishpi-client"
-path = "fishpi-client/src/main.rs"
+# [[bin]]
+# name = "fishpi-client"
+# path = "fishpi-client/src/main.rs"
 
 
 [[bin]]
