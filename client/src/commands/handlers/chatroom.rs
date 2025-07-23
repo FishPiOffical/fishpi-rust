@@ -765,9 +765,8 @@ impl ChatroomCommand {
         if result.success {
             if let Some(cost) = result.data {
                 println!(
-                    "弹幕发送花费 {}{}",
-                    cost.cost.to_string().yellow(),
-                    cost.unit.yellow()
+                    "弹幕发送花费 {}",
+                    cost.value.yellow()
                 );
             } else {
                 println!("{}", "获取弹幕价格失败: 数据为空".red());

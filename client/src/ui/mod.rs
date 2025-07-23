@@ -33,12 +33,6 @@ impl CommandCompleter {
     fn set_commands(&mut self, commands: Vec<CommandItem>) {
         self.commands = commands;
     }
-
-    pub fn set_users(&self, users: Vec<ChatRoomUser>) {
-        if let Ok(mut guard) = self.users.lock() {
-            *guard = users;
-        }
-    }
 }
 
 impl Helper for CommandCompleter {}

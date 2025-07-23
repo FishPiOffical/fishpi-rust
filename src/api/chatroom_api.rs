@@ -193,8 +193,6 @@ impl ChatroomApi {
     ///
     /// 返回撤回结果
     pub async fn revoke_message(&self, oid: &str) -> Result<ApiResponse<()>> {
-        log::debug!("撤回聊天室消息: {}", oid);
-
         let token = self.check_token("撤回聊天室消息").await?;
         let request_body = self.build_request_body(json!({}), token);
 
@@ -244,35 +242,22 @@ impl ChatroomApi {
     pub async fn get_barrage_cost(&self) -> Result<BarrageCost> {
         let token = self.client.get_token().await;
         let params = self.build_params(HashMap::new(), token);
+        let response = self
+            .client
+            .get::<serde_json::Value>("/chat-room/barrager/get", Some(params))
+            .await?;
 
-        let response = self.client.get_html("/cr", Some(params)).await?;
-
-        let re1 = Regex::new(r#"发送弹幕每次将花费\s*<b><span[^>]*>([-0-9]+)</span></b>\s*<span[^>]*>([^<]*)</span>"#).unwrap();
-        if let Some(caps) = re1.captures(&response) {
-            let cost = caps
-                .get(1)
-                .map_or("5", |m| m.as_str())
-                .parse::<i32>()
-                .unwrap_or(20);
-            let unit = caps
-                .get(2)
-                .map_or("积分", |m| m.as_str())
-                .trim()
-                .to_string();
-            return Ok(BarrageCost { cost, unit });
+        if let Some(data) = response.get("data").and_then(|v| v.as_str()) {
+            return Ok(BarrageCost { value: data.trim().to_string() });
         }
 
-        Ok(BarrageCost {
-            cost: 5,
-            unit: "积分".to_string(),
-        })
+        Ok(BarrageCost::default())
     }
 
     /// 获取禁言中成员列表
     ///
     /// 返回禁言成员列表
     pub async fn get_mutes(&self) -> Result<Vec<MuteItem>> {
-        log::debug!("获取禁言中成员列表");
 
         let response = self
             .client

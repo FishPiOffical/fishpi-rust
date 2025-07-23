@@ -582,15 +582,13 @@ impl From<&Value> for BarragerMsg {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarrageCost {
-    pub cost: i32,
-    pub unit: String,
+    pub value: String,
 }
 
 impl Default for BarrageCost {
     fn default() -> Self {
         Self {
-            cost: 20,
-            unit: "积分".to_string(),
+            value: "5积分".to_string(),
         }
     }
 }
