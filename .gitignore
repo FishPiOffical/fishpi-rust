@@ -41,3 +41,7 @@ token.txt
 !README.md
 !docs/
 !docs/**
+!client/
+!client/**
+!.github/
+!.github/**
