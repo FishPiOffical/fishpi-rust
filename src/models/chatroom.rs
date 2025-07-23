@@ -156,8 +156,6 @@ impl ChatRoomMessage {
 
 
     pub fn parse_special_content(&mut self) {
-        log::debug!("开始解析特殊消息类型: id={}, type={:?}", self.oid, self.message_type);
-        
         // 先检查md字段是否包含天气消息
         if let Some(md_content) = &self.md {
             if md_content.contains("\"msgType\":\"weather\"") {
@@ -173,117 +171,76 @@ impl ChatRoomMessage {
         // 尝试将内容解析为JSON
         let content_json_result = serde_json::from_str::<serde_json::Value>(&self.content);
         if let Ok(content_data) = content_json_result {
-            log::debug!("成功解析消息内容为JSON");
-            
             // 检查是否有msgType字段，确定消息类型
             if let Some(msg_type) = content_data.get("msgType").and_then(|v| v.as_str()) {
-                log::debug!("从JSON中检测到msgType字段: {}", msg_type);
-                
                 match msg_type {
                     "redPacket" => {
-                        log::debug!("解析红包消息: id={}", self.oid);
                         let redpacket = RedPacketMessage::from(&content_data);
-                        log::debug!("红包消息详情: 类型={}, 数量={}, 金额={}", 
-                            redpacket.type_, redpacket.count, redpacket.money);
                         self.special_content = SpecialMessageContent::RedPacket(redpacket);
                         self.message_type = Some(ChatRoomMessageType::RED_PACKET.to_string());
                     }
                     "weather" => {
                         let weather = WeatherMsg::from(&content_data);
-                        // 验证天气数据的完整性
-                        if !weather.dates.is_empty() && !weather.codes.is_empty() {
-                            log::debug!("【消息解析】天气数据完整性检查通过: dates={}, codes={}",
-                                weather.dates, weather.codes);
-                        } else {
-                            log::warn!("【消息解析】天气数据不完整: dates='{}', codes='{}'", 
-                                weather.dates, weather.codes);
-                        }
-                        
                         self.special_content = SpecialMessageContent::Weather(weather);
                         self.message_type = Some(ChatRoomMessageType::WEATHER.to_string());
-                        
-                        // 确认消息类型已设置为天气
-                        log::warn!("【消息解析】消息类型已设置为天气: type={:?}", self.message_type);
                     }
                     "music" => {
-                        log::debug!("解析音乐消息: id={}", self.oid);
                         let music = MusicMsg::from(&content_data);
                         self.special_content = SpecialMessageContent::Music(music);
                         self.message_type = Some(ChatRoomMessageType::MUSIC.to_string());
                     }
                     _ => {
-                        log::debug!("未知的特殊消息类型: {}", msg_type);
+                        // 未知消息类型
                     }
                 }
             } else {
-                log::debug!("JSON中未找到msgType字段");
-                
                 // 尝试检查是否包含红包标记
                 if self.content.contains("[redpacket]") && self.content.contains("[/redpacket]") {
-                    log::debug!("检测到红包标记: [redpacket][/redpacket]");
-                    
                     let start = self.content.find("[redpacket]").unwrap() + "[redpacket]".len();
                     let end = self.content.find("[/redpacket]").unwrap();
                     
                     if start < end {
                         // 提取红包JSON字符串
                         let redpacket_json = &self.content[start..end];
-                        log::debug!("提取到红包JSON: {}", redpacket_json);
                         
                         // 尝试解析JSON
                         match serde_json::from_str::<serde_json::Value>(redpacket_json) {
                             Ok(redpacket_data) => {
-                                log::debug!("成功解析红包JSON数据");
                                 let redpacket = RedPacketMessage::from(&redpacket_data);
-                                log::debug!("标记格式红包详情: 类型={}, 数量={}, 金额={}", 
-                                    redpacket.type_, redpacket.count, redpacket.money);
                                 self.special_content = SpecialMessageContent::RedPacket(redpacket);
                                 self.message_type = Some(ChatRoomMessageType::RED_PACKET.to_string());
                             },
-                            Err(e) => {
-                                log::error!("解析红包JSON失败: {}", e);
-                                log::debug!("红包JSON内容: {}", redpacket_json);
+                            Err(_) => {
+                                // 忽略解析错误
                             }
                         }
                     }
                 }
             }
         } else {
-            log::debug!("消息内容不是有效的JSON: {}", content_json_result.err().unwrap());
-            
             // 直接检查是否包含红包标记
             if self.content.contains("[redpacket]") && self.content.contains("[/redpacket]") {
-                log::debug!("在非JSON消息中检测到红包标记");
-                
                 let start = self.content.find("[redpacket]").unwrap() + "[redpacket]".len();
                 let end = self.content.find("[/redpacket]").unwrap();
                 
                 if start < end {
                     // 提取红包JSON字符串
                     let redpacket_json = &self.content[start..end];
-                    log::debug!("提取到红包JSON: {}", redpacket_json);
                     
                     // 尝试解析JSON
                     match serde_json::from_str::<serde_json::Value>(redpacket_json) {
                         Ok(redpacket_data) => {
-                            log::debug!("成功解析红包JSON数据");
                             let redpacket = RedPacketMessage::from(&redpacket_data);
-                            log::debug!("红包详情: 类型={}, 数量={}, 金额={}", 
-                                redpacket.type_, redpacket.count, redpacket.money);
                             self.special_content = SpecialMessageContent::RedPacket(redpacket);
                             self.message_type = Some(ChatRoomMessageType::RED_PACKET.to_string());
                         },
-                        Err(e) => {
-                            log::error!("解析红包JSON失败: {}", e);
-                            log::debug!("红包JSON内容: {}", redpacket_json);
+                        Err(_) => {
+                            // 忽略解析错误
                         }
                     }
                 }
             }
         }
-        
-        log::debug!("特殊消息类型解析结束: id={}, 最终type={:?}, 是否为红包={}", 
-            self.oid, self.message_type, matches!(self.special_content, SpecialMessageContent::RedPacket(_)));
     }
 }
 
@@ -853,7 +810,6 @@ impl WeatherMsg {
     pub fn data(&self) -> Vec<WeatherMsgData> {
         if self.dates.is_empty() || self.codes.is_empty() || 
            self.min_temps.is_empty() || self.max_temps.is_empty() {
-            log::warn!("【天气数据解析】天气数据字段为空，返回空结果");
             return Vec::new();
         }
         
@@ -863,10 +819,6 @@ impl WeatherMsg {
         let min_temps: Vec<&str> = self.min_temps.split(',').collect();
         let max_temps: Vec<&str> = self.max_temps.split(',').collect();
         
-        // 记录分割后的长度，便于调试
-        log::debug!("【天气数据解析】天气数据分割后长度: dates={}, codes={}, min_temps={}, max_temps={}",
-            dates.len(), codes.len(), min_temps.len(), max_temps.len());
-            
         // 计算最小长度，避免索引越界
         let min_len = dates.len()
             .min(codes.len())
@@ -874,7 +826,6 @@ impl WeatherMsg {
             .min(max_temps.len());
             
         if min_len == 0 {
-            log::warn!("【天气数据解析】分割后天气数据长度为0，返回空结果");
             return Vec::new();
         }
 
@@ -883,18 +834,12 @@ impl WeatherMsg {
             // 安全地解析温度值
             let min_temp = match min_temps[i].trim().parse::<f64>() {
                 Ok(value) => value,
-                Err(e) => {
-                    log::warn!("【天气数据解析】解析最低温度失败: '{}' => {}", min_temps[i], e);
-                    0.0
-                }
+                Err(_) => 0.0,
             };
             
             let max_temp = match max_temps[i].trim().parse::<f64>() {
                 Ok(value) => value,
-                Err(e) => {
-                    log::warn!("【天气数据解析】解析最高温度失败: '{}' => {}", max_temps[i], e);
-                    0.0
-                }
+                Err(_) => 0.0,
             };
             
             result.push(WeatherMsgData {
@@ -903,9 +848,6 @@ impl WeatherMsg {
                 min: min_temp,
                 max: max_temp,
             });
-            
-            log::debug!("【天气数据解析】Day {}: 日期={}, 代码={}, 温度{}°C-{}°C", 
-                i+1, dates[i].trim(), codes[i].trim(), min_temp, max_temp);
         }
         result
     }
@@ -919,71 +861,39 @@ impl From<&Value> for WeatherMsg {
             // 城市名可能来自t字段
             if let Some(title) = obj.get("t").and_then(|v| v.as_str()) {
                 weather_msg.title = title.to_string();
-                log::debug!("【天气解析】从t字段解析城市名: {}", title);
             } else if let Some(title) = obj.get("title").and_then(|v| v.as_str()) {
-                // 兼容可能存在的title字段
                 weather_msg.title = title.to_string();
-                log::debug!("【天气解析】从title字段解析城市名: {}", title);
-            } else {
-                log::warn!("【天气解析】无法解析城市名字段(t或title)");
             }
             
             if let Some(description) = obj.get("st").and_then(|v| v.as_str()) {
                 weather_msg.description = description.to_string();
-                log::debug!("【天气解析】从st字段解析描述: {}", description);
             } else if let Some(description) = obj.get("description").and_then(|v| v.as_str()) {
-                // 兼容可能存在的description字段
                 weather_msg.description = description.to_string();
-                log::debug!("【天气解析】从description字段解析描述: {}", description);
-            } else {
-                log::warn!("【天气解析】无法解析description字段(st或description)");
             }
             
             if let Some(dates) = obj.get("date").and_then(|v| v.as_str()) {
                 weather_msg.dates = dates.to_string();
-                log::debug!("【天气解析】从date字段解析日期: {}", dates);
-            } else {
-                log::warn!("【天气解析】无法解析dates字段");
             }
             
             if let Some(codes) = obj.get("weatherCode").and_then(|v| v.as_str()) {
                 weather_msg.codes = codes.to_string();
-                log::debug!("【天气解析】从weatherCode字段解析天气代码: {}", codes);
-            } else {
-                log::warn!("【天气解析】无法解析codes字段");
             }
             
             if let Some(min_temps) = obj.get("min").and_then(|v| v.as_str()) {
                 weather_msg.min_temps = min_temps.to_string();
-                log::debug!("【天气解析】从min字段解析最低温度: {}", min_temps);
-            } else {
-                log::warn!("【天气解析】无法解析min_temps字段");
             }
             
             if let Some(max_temps) = obj.get("max").and_then(|v| v.as_str()) {
                 weather_msg.max_temps = max_temps.to_string();
-                log::debug!("【天气解析】从max字段解析最高温度: {}", max_temps);
-            } else {
-                log::warn!("【天气解析】无法解析max_temps字段");
             }
             
             if let Some(type_) = obj.get("type").and_then(|v| v.as_str()) {
                 weather_msg.type_ = type_.to_string();
-                log::debug!("【天气解析】从type字段解析类型: {}", type_);
-            } else {
-                // 使用默认值 "weather"
-                log::warn!("【天气解析】无法解析type字段，使用默认值");
             }
             
             if let Some(msg_type) = obj.get("msgType").and_then(|v| v.as_str()) {
                 weather_msg.msg_type = msg_type.to_string();
-                log::debug!("【天气解析】从msgType字段解析消息类型: {}", msg_type);
-            } else {
-                // 使用默认值 "weather"
-                log::warn!("【天气解析】无法解析msgType字段，使用默认值");
             }
-        } else {
-            log::error!("【天气解析】输入不是有效的JSON对象: {:?}", value);
         }
         
         weather_msg

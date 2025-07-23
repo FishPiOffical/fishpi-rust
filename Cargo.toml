@@ -5,7 +5,7 @@ edition = "2024"
 authors = ["只有午安"]
 description = "FishPi社区API的Rust库"
 license = "MIT"
-repository = "https://github.com/imlyzh/fishpi-rust"
+repository = "https://github.com/FishPiOffical/fishpi-rust"
 documentation = "https://docs.rs/fishpi-rust"
 readme = "README.md"
 keywords = ["fishpi"]
@@ -21,7 +21,7 @@ path = "fishpi-client/src/main.rs"
 
 [[bin]]
 name = "client"
-path = "fishpi-client-v2/src/main.rs"
+path = "client/src/main.rs"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json", "stream", "rustls-tls"] }

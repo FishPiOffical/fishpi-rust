@@ -300,6 +300,14 @@ impl ChatroomService {
                                 })
                                 .await;
                         }
+                        WebSocketMessage::Custom { message } => {
+                            service
+                                .notify_listeners(ChatRoomData {
+                                    type_: ChatRoomMessageType::CUSTOM.to_string(),
+                                    data: ChatRoomDataContent::Custom(message),
+                                })
+                                .await;
+                        }
                         _ => {}
                     }
                 }
