@@ -9,6 +9,7 @@ use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Context, Helper};
 use std::io;
+use std::sync::{Arc, Mutex};
 
 pub struct CommandItem {
     pub name: &'static str,
@@ -17,15 +18,15 @@ pub struct CommandItem {
 
 /// 命令补全器
 pub struct CommandCompleter {
-    commands: Vec<CommandItem>,
-    users: Vec<ChatRoomUser>,
+    pub commands: Vec<CommandItem>,
+    pub users: Arc<Mutex<Vec<ChatRoomUser>>>,
 }
 
 impl CommandCompleter {
     fn new() -> Self {
         Self {
             commands: vec![],
-            users: vec![],
+            users: Arc::new(Mutex::new(vec![])),
         }
     }
 
@@ -33,8 +34,10 @@ impl CommandCompleter {
         self.commands = commands;
     }
 
-    pub fn set_users(&mut self, users: Vec<ChatRoomUser>) {
-        self.users = users;
+    pub fn set_users(&self, users: Vec<ChatRoomUser>) {
+        if let Ok(mut guard) = self.users.lock() {
+            *guard = users;
+        }
     }
 }
 
@@ -80,8 +83,8 @@ impl Completer for CommandCompleter {
         // @用户名补全
         if let Some(at_pos) = line[..pos].rfind('@') {
             let prefix = &line[at_pos + 1..pos];
-            let candidates: Vec<Pair> = self
-                .users
+            let users = self.users.lock().unwrap();
+            let candidates: Vec<Pair> = users
                 .iter()
                 .filter(|user| {
                     user.user_name
@@ -122,6 +125,17 @@ impl CrosstermInputHandler {
 
         Self { editor }
     }
+    
+    pub fn with_completer(completer: CommandCompleter) -> Self {
+        let config = Config::builder()
+            .completion_show_all_if_ambiguous(true)
+            .completion_type(CompletionType::List)
+            .build();
+
+        let mut editor = Editor::with_config(config).unwrap();
+        editor.set_helper(Some(completer));
+        Self { editor }
+    }
 
     pub fn set_commands(&mut self, commands: Vec<CommandItem>) {
         if let Some(helper) = self.editor.helper_mut() {
@@ -129,11 +143,6 @@ impl CrosstermInputHandler {
         }
     }
 
-    pub fn set_users(&mut self, users: Vec<ChatRoomUser>) {
-        if let Some(helper) = self.editor.helper_mut() {
-            helper.set_users(users);
-        }
-    }
 
     pub async fn start_input_loop(&mut self, prompt: &str) -> io::Result<Option<String>> {
         match self.editor.readline(prompt) {

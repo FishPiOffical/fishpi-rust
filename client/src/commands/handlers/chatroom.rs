@@ -1,4 +1,4 @@
-use crate::ui::CrosstermInputHandler;
+use crate::ui::{CrosstermInputHandler, CommandCompleter};
 use crate::{
     commands::{Command, CommandContext, CommandResult, handlers::RedpacketCommand},
     ui::CommandItem,
@@ -77,7 +77,11 @@ impl ChatroomCommand {
     }
 
     async fn chatroom_loop(&self) -> Result<()> {
-        let mut input_handler = CrosstermInputHandler::new();
+        let completer = CommandCompleter {
+            commands: vec![],
+            users: Arc::clone(&self.online_users),
+        };
+        let mut input_handler = CrosstermInputHandler::with_completer(completer);
         input_handler.set_commands(vec![
             CommandItem {
                 name: ":q",
@@ -134,9 +138,6 @@ impl ChatroomCommand {
         ]);
 
         loop {
-            if let Ok(users) = self.online_users.lock() {
-                input_handler.set_users(users.clone());
-            }
             match input_handler
                 .start_input_loop(&format!("{}", "聊天室> ".green().bold()))
                 .await?
