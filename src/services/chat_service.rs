@@ -1,10 +1,11 @@
 use crate::api::chat_api::ChatApi;
 use crate::api::client::ApiClient;
 use crate::models::chat::{
-    ChatData, ChatDataContent, ChatMessage, ChatMessageType, ChatNotice, ChatRevoke, WebsocketInfo
+    ChatData, ChatDataContent, ChatMessage, ChatMessageType, ChatNotice, ChatRevoke, WebsocketInfo,
 };
 use crate::models::user::Response;
 use crate::services::ApiCaller;
+use anyhow::Result as AnyhowResult;
 use futures::SinkExt;
 use futures::StreamExt;
 use serde_json::Value;
@@ -15,7 +16,6 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::protocol::Message;
 use url::Url;
-use anyhow::Result as AnyhowResult;
 
 /// 私聊监听器类型
 pub type ChatListener = Box<dyn Fn(ChatMessage) + Send + Sync>;
@@ -53,7 +53,7 @@ impl ApiCaller for ChatService {
     {
         match f().await {
             Ok(data) => Response::success(data),
-            Err(err) => Response::error(&format!("API调用失败: {}", err))
+            Err(err) => Response::error(&format!("API调用失败: {}", err)),
         }
     }
 
@@ -81,7 +81,7 @@ impl ApiCaller for ChatService {
                     .to_string();
                 Response::error(&error_msg)
             }
-            Err(err) => Response::error(&format!("API调用失败: {}", err))
+            Err(err) => Response::error(&format!("API调用失败: {}", err)),
         }
     }
 }
@@ -103,9 +103,8 @@ impl ChatService {
             "获取私聊用户列表",
             || self.chat_api.get_list(),
             |data| {
-                data.as_array().map(|arr| {
-                    arr.iter().filter_map(ChatData::from_json).collect()
-                })
+                data.as_array()
+                    .map(|arr| arr.iter().filter_map(ChatData::from_json).collect())
             },
         )
         .await
@@ -124,16 +123,16 @@ impl ChatService {
         page_size: i32,
         auto_read: bool,
     ) -> Response<Vec<ChatData>> {
-        let result = self.call_json_api(
-            &format!("获取与用户 {} 的私聊消息", user),
-            || self.chat_api.get_messages(user, page, page_size),
-            |data| {
-                data.as_array().map(|arr| {
-                    arr.iter().filter_map(ChatData::from_json).collect()
-                })
-            },
-        )
-        .await;
+        let result = self
+            .call_json_api(
+                &format!("获取与用户 {} 的私聊消息", user),
+                || self.chat_api.get_messages(user, page, page_size),
+                |data| {
+                    data.as_array()
+                        .map(|arr| arr.iter().filter_map(ChatData::from_json).collect())
+                },
+            )
+            .await;
 
         // 自动标记为已读
         if result.success && auto_read {
@@ -150,7 +149,7 @@ impl ChatService {
         self.call_json_api(
             &format!("标记用户 {} 的消息为已读", user),
             || self.chat_api.mark_as_read(user),
-            |_| Some(())
+            |_| Some(()),
         )
         .await
     }
@@ -172,7 +171,7 @@ impl ChatService {
         self.call_json_api(
             &format!("撤回私聊消息 {}", msg_id),
             || self.chat_api.revoke(msg_id),
-            |_| Some(())
+            |_| Some(()),
         )
         .await
     }
@@ -181,7 +180,11 @@ impl ChatService {
     ///
     /// * `user` - 接收用户名
     /// * `content` - 消息内容
-    pub async fn send<'a>(&'a self, user: &'a str, content: Cow<'a, str>) -> Response<WebsocketInfo> {
+    pub async fn send<'a>(
+        &'a self,
+        user: &'a str,
+        content: Cow<'a, str>,
+    ) -> Response<WebsocketInfo> {
         // 确保WebSocket已连接
         if !self.is_connected(Some(user)).await {
             let connect_result = self.connect(Some(user)).await;
@@ -333,7 +336,10 @@ impl ChatService {
     /// 启动WebSocket消息发送处理
     fn start_websocket_sender(
         &self,
-        mut write: impl futures::sink::Sink<Message, Error = tokio_tungstenite::tungstenite::Error> + Unpin + Send + 'static,
+        mut write: impl futures::sink::Sink<Message, Error = tokio_tungstenite::tungstenite::Error>
+        + Unpin
+        + Send
+        + 'static,
         mut receiver: futures::channel::mpsc::UnboundedReceiver<Message>,
         _user_key: String,
     ) {
@@ -349,15 +355,20 @@ impl ChatService {
     /// 启动WebSocket消息接收处理
     fn start_websocket_receiver(
         &self,
-        mut read: impl futures::stream::Stream<Item = Result<Message, tokio_tungstenite::tungstenite::Error>> + Unpin + Send + 'static,
+        mut read: impl futures::stream::Stream<
+            Item = Result<Message, tokio_tungstenite::tungstenite::Error>,
+        > + Unpin
+        + Send
+        + 'static,
         message_listeners: Arc<Mutex<HashMap<String, Vec<ChatListener>>>>,
         websocket_info: Arc<Mutex<HashMap<String, WebsocketInfo>>>,
-        websocket_senders: Arc<Mutex<HashMap<String, futures::channel::mpsc::UnboundedSender<Message>>>>,
+        websocket_senders: Arc<
+            Mutex<HashMap<String, futures::channel::mpsc::UnboundedSender<Message>>>,
+        >,
         user_key: String,
     ) {
         let chat_service = self.clone();
         tokio::spawn(async move {
-            
             while let Some(msg_result) = read.next().await {
                 match msg_result {
                     Ok(msg) => match msg {
@@ -376,31 +387,33 @@ impl ChatService {
                                     .await;
                                 });
                             }
-                        },
+                        }
                         Message::Close(_) => {
                             Self::update_connection_status(&websocket_info, &user_key, false).await;
-                            
+
                             // 获取重试次数
                             let retry_times = {
                                 let info = websocket_info.lock().await;
-                                info.get(&user_key).map(|ws_info| ws_info.retry_times).unwrap_or(0)
+                                info.get(&user_key)
+                                    .map(|ws_info| ws_info.retry_times)
+                                    .unwrap_or(0)
                             };
-                            
+
                             // 如果重试次数超过限制，则不再重连
                             if retry_times >= 10 {
                                 break;
                             }
-                            
+
                             // 等待一段时间后重连
                             tokio::time::sleep(std::time::Duration::from_millis(5000)).await;
-                            
+
                             // 重新连接
                             let user = if user_key == "_user-channel_" {
                                 None
                             } else {
                                 Some(user_key.as_str())
                             };
-                            
+
                             let connect_result = chat_service.connect(user).await;
                             if !connect_result.success {
                                 // 更新重试次数
@@ -415,7 +428,7 @@ impl ChatService {
                     }
                 }
             }
-            
+
             let mut senders = websocket_senders.lock().await;
             senders.remove(&user_key);
         });
@@ -452,7 +465,7 @@ impl ChatService {
         let user_key = user.unwrap_or("_user-channel_").to_string();
 
         Self::update_connection_status(&self.websocket_info, &user_key, false).await;
-        
+
         // 清理发送器
         {
             let mut senders = self.websocket_senders.lock().await;
@@ -472,7 +485,8 @@ impl ChatService {
     {
         let user_key = user.unwrap_or("_user-channel_").to_string();
 
-        self.add_listener_internal(Box::new(callback), &user_key).await;
+        self.add_listener_internal(Box::new(callback), &user_key)
+            .await;
 
         if !self.is_connected(user).await {
             let connect_result = self.connect(user).await;
@@ -483,12 +497,14 @@ impl ChatService {
 
         Response::success(())
     }
-    
+
     /// 内部方法：添加监听器到集合
     async fn add_listener_internal(&self, callback: ChatListener, user_key: &str) {
         {
             let mut listeners = self.message_listeners.lock().await;
-            let user_listeners = listeners.entry(user_key.to_string()).or_insert_with(Vec::new);
+            let user_listeners = listeners
+                .entry(user_key.to_string())
+                .or_insert_with(Vec::new);
             user_listeners.push(callback);
         }
     }
@@ -574,7 +590,6 @@ impl ChatService {
         Response::success(())
     }
 
-
     /// 处理WebSocket消息
     async fn handle_ws_message(
         value: Value,
@@ -583,35 +598,50 @@ impl ChatService {
         user_key: &str,
     ) {
         let mut message_type = String::from(ChatMessageType::DATA);
-        
+
         if let Some(command) = value.get("command").and_then(|v| v.as_str()) {
             if ["chatUnreadCountRefresh", "newIdleChatMessage"].contains(&command) {
                 message_type = String::from(ChatMessageType::NOTICE);
             }
         }
-        
+
         if value.get("type").and_then(|v| v.as_str()) == Some("revoke") {
             message_type = String::from(ChatMessageType::REVOKE);
         }
-        
+
         if message_type != ChatMessageType::NOTICE && value.get("command").is_some() {
             return;
         }
-        
+
         let chat_message = match message_type.as_str() {
-            ChatMessageType::DATA => {
-                ChatMessage {
-                    type_: message_type,
-                    data: ChatDataContent::Data(ChatData::from(&value)),
-                }
-            }
+            ChatMessageType::DATA => ChatMessage {
+                type_: message_type,
+                data: ChatDataContent::Data(ChatData::from(&value)),
+            },
             ChatMessageType::NOTICE => {
                 let notice = ChatNotice {
-                    command: value.get("command").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    user_id: value.get("userId").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    preview: value.get("preview").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                    sender_avatar: value.get("senderAvatar").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                    sender_user_name: value.get("senderUserName").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                    command: value
+                        .get("command")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    user_id: value
+                        .get("userId")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    preview: value
+                        .get("preview")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
+                    sender_avatar: value
+                        .get("senderAvatar")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
+                    sender_user_name: value
+                        .get("senderUserName")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()),
                 };
                 ChatMessage {
                     type_: message_type,
@@ -620,20 +650,26 @@ impl ChatService {
             }
             ChatMessageType::REVOKE => {
                 let revoke = ChatRevoke {
-                    data: value.get("data").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                    type_: value.get("type").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    data: value
+                        .get("data")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
+                    type_: value
+                        .get("type")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string(),
                 };
                 ChatMessage {
                     type_: message_type,
                     data: ChatDataContent::Revoke(revoke),
                 }
             }
-            _ => {
-                ChatMessage {
-                    type_: message_type,
-                    data: ChatDataContent::Data(ChatData::default()),
-                }
-            }
+            _ => ChatMessage {
+                type_: message_type,
+                data: ChatDataContent::Data(ChatData::default()),
+            },
         };
 
         let message_id = value
@@ -650,15 +686,9 @@ impl ChatService {
             }
         }
 
-        Self::dispatch_to_listeners(
-            chat_message,
-            &message_listeners,
-            user_key,
-            &message_id,
-        )
-        .await;
+        Self::dispatch_to_listeners(chat_message, &message_listeners, user_key, &message_id).await;
     }
-    
+
     /// 分发消息到监听器
     async fn dispatch_to_listeners(
         chat_message: ChatMessage,

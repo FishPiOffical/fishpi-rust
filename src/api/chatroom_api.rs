@@ -249,8 +249,16 @@ impl ChatroomApi {
 
         let re1 = Regex::new(r#"发送弹幕每次将花费\s*<b><span[^>]*>([-0-9]+)</span></b>\s*<span[^>]*>([^<]*)</span>"#).unwrap();
         if let Some(caps) = re1.captures(&response) {
-            let cost = caps.get(1).map_or("5", |m| m.as_str()).parse::<i32>().unwrap_or(20);
-            let unit = caps.get(2).map_or("积分", |m| m.as_str()).trim().to_string();
+            let cost = caps
+                .get(1)
+                .map_or("5", |m| m.as_str())
+                .parse::<i32>()
+                .unwrap_or(20);
+            let unit = caps
+                .get(2)
+                .map_or("积分", |m| m.as_str())
+                .trim()
+                .to_string();
             return Ok(BarrageCost { cost, unit });
         }
 
@@ -328,7 +336,6 @@ impl ChatroomApi {
     ///
     /// 返回节点信息
     pub async fn get_node_info(&self) -> Result<ChatRoomNodeInfo> {
-
         let token = self.check_token("获取聊天室节点信息").await?;
         let params = self.build_params(HashMap::new(), token);
 

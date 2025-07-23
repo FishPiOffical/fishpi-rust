@@ -1,3 +1,4 @@
+use crate::utils::AuthService;
 use anyhow::Result;
 use async_trait::async_trait;
 use fishpi_rust::FishPi;
@@ -12,6 +13,7 @@ use crate::commands::handlers::{
 };
 use colored::*;
 pub use registry::CommandRegistry;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub enum CommandResult {
@@ -28,12 +30,16 @@ pub type CommandFactory = Box<dyn Fn(&CommandContext) -> Box<dyn Command> + Send
 
 #[derive(Clone)]
 pub struct CommandContext {
-    pub client: FishPi,
+    pub client: Arc<FishPi>,
+    pub auth: Arc<AuthService>,
 }
 
 impl CommandContext {
     pub fn new(client: FishPi) -> Self {
-        Self { client }
+        Self {
+            client: Arc::new(client.clone()),
+            auth: Arc::new(AuthService::new(Arc::new(client))),
+        }
     }
 
     /// 通用的模式切换方法

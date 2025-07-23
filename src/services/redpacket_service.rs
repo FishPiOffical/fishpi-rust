@@ -1,7 +1,6 @@
 use crate::api::RedpacketApi;
 use crate::models::redpacket::{GestureType, RedPacketInfo, RedPacketMessage, RedPacketType};
 use crate::models::user::Response;
-use log::debug;
 
 /// 红包服务
 #[derive(Clone, Debug)]
@@ -24,16 +23,10 @@ impl RedpacketService {
     /// * `Response<RedPacketInfo>` - 红包信息响应
     pub async fn open(&self, oid: &str) -> Response<RedPacketInfo> {
         match self.redpacket_api.open_redpacket(oid, None).await {
-            Ok(info) => {
-                if info.info.count <= info.info.got {
-                    debug!("红包已全部被领取");
-                }
-                Response::success(info)
-            }
+            Ok(info) => Response::success(info),
             Err(err) => {
                 let err_msg = err.to_string();
                 if err_msg.contains("已被领完") || err_msg.contains("已领取") {
-                    debug!("红包已被领完: {}", err_msg);
                     Response {
                         success: false,
                         message: Some(err_msg),
@@ -65,27 +58,10 @@ impl RedpacketService {
             .open_redpacket(oid, Some(gesture_value))
             .await
         {
-            Ok(info) => {
-                if info.info.count <= info.info.got {
-                    debug!("猜拳红包已全部被领取");
-                } else if let Some(g) = info.info.gesture {
-                    let host_gesture = if let Some(gesture_type) = GestureType::from_i32(g) {
-                        format!("({})", gesture_type.name())
-                    } else {
-                        format!("(未知手势:{})", g)
-                    };
-                    let user_gesture = gesture.name();
-                    debug!(
-                        "猜拳结果: 红包发送者出 {} vs 您出 {}",
-                        host_gesture, user_gesture
-                    );
-                }
-                Response::success(info)
-            }
+            Ok(info) => Response::success(info),
             Err(err) => {
                 let err_msg = err.to_string();
                 if err_msg.contains("已被领完") || err_msg.contains("已领取") {
-                    debug!("猜拳红包已被领完: {}", err_msg);
                     Response {
                         success: false,
                         message: Some(err_msg),
@@ -233,14 +209,7 @@ impl RedpacketService {
     /// * `Response<()>` - 响应结果
     async fn send_redpacket(&self, redpacket: RedPacketMessage) -> Response<()> {
         match self.redpacket_api.send_redpacket(&redpacket).await {
-            Ok(response) => {
-                if response.code != 0 {
-                    if let Some(msg) = &response.msg {
-                        debug!("发送红包失败: {}", msg);
-                    }
-                }
-                response.into()
-            }
+            Ok(response) => response.into(),
             Err(err) => Response::error(&format!("发送红包失败: {}", err)),
         }
     }

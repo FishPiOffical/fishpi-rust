@@ -154,7 +154,6 @@ impl ChatRoomMessage {
         }
     }
 
-
     pub fn parse_special_content(&mut self) {
         // 先检查md字段是否包含天气消息
         if let Some(md_content) = &self.md {
@@ -167,7 +166,7 @@ impl ChatRoomMessage {
                 }
             }
         }
-        
+
         // 尝试将内容解析为JSON
         let content_json_result = serde_json::from_str::<serde_json::Value>(&self.content);
         if let Ok(content_data) = content_json_result {
@@ -198,18 +197,19 @@ impl ChatRoomMessage {
                 if self.content.contains("[redpacket]") && self.content.contains("[/redpacket]") {
                     let start = self.content.find("[redpacket]").unwrap() + "[redpacket]".len();
                     let end = self.content.find("[/redpacket]").unwrap();
-                    
+
                     if start < end {
                         // 提取红包JSON字符串
                         let redpacket_json = &self.content[start..end];
-                        
+
                         // 尝试解析JSON
                         match serde_json::from_str::<serde_json::Value>(redpacket_json) {
                             Ok(redpacket_data) => {
                                 let redpacket = RedPacketMessage::from(&redpacket_data);
                                 self.special_content = SpecialMessageContent::RedPacket(redpacket);
-                                self.message_type = Some(ChatRoomMessageType::RED_PACKET.to_string());
-                            },
+                                self.message_type =
+                                    Some(ChatRoomMessageType::RED_PACKET.to_string());
+                            }
                             Err(_) => {
                                 // 忽略解析错误
                             }
@@ -222,18 +222,18 @@ impl ChatRoomMessage {
             if self.content.contains("[redpacket]") && self.content.contains("[/redpacket]") {
                 let start = self.content.find("[redpacket]").unwrap() + "[redpacket]".len();
                 let end = self.content.find("[/redpacket]").unwrap();
-                
+
                 if start < end {
                     // 提取红包JSON字符串
                     let redpacket_json = &self.content[start..end];
-                    
+
                     // 尝试解析JSON
                     match serde_json::from_str::<serde_json::Value>(redpacket_json) {
                         Ok(redpacket_data) => {
                             let redpacket = RedPacketMessage::from(&redpacket_data);
                             self.special_content = SpecialMessageContent::RedPacket(redpacket);
                             self.message_type = Some(ChatRoomMessageType::RED_PACKET.to_string());
-                        },
+                        }
                         Err(_) => {
                             // 忽略解析错误
                         }
@@ -340,8 +340,7 @@ impl Default for ChatRoomMessage {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChatRoomUser {
     #[serde(rename = "userOId")]
     pub user_oid: Option<i64>,
@@ -371,7 +370,6 @@ impl ChatRoomUser {
         }
     }
 }
-
 
 impl From<&Value> for ChatRoomUser {
     fn from(data: &Value) -> Self {
@@ -510,8 +508,7 @@ impl fmt::Display for ChatSource {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BarragerMsg {
     #[serde(rename = "userName")]
     pub user_name: String,
@@ -530,7 +527,6 @@ pub struct BarragerMsg {
     #[serde(rename = "userAvatarURL210")]
     pub user_avatar_url_210: Option<String>,
 }
-
 
 impl BarragerMsg {
     pub fn all_name(&self) -> String {
@@ -599,8 +595,7 @@ impl Default for BarrageCost {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct MuteItem {
     pub time: i64,
     #[serde(rename = "userAvatarURL")]
@@ -610,7 +605,6 @@ pub struct MuteItem {
     #[serde(rename = "userNickname")]
     pub user_nickname: Option<String>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeatherMsgData {
@@ -665,7 +659,7 @@ impl WeatherMsgData {
             "37" => "严重霾",
             "38" => "雨雪天气",
             "99" => "未知",
-            
+
             // 字符编码的国际天气代码
             "CLEAR_DAY" => "晴天☀️",
             "CLEAR_NIGHT" => "晴夜🌙",
@@ -691,7 +685,7 @@ impl WeatherMsgData {
             "FREEZING_RAIN" => "冻雨🧊",
             "SNOW_THUNDER" => "雷雪⚡❄️",
             "TORNADO" => "龙卷风🌪️",
-            
+
             _ => "未知天气",
         }
     }
@@ -699,11 +693,14 @@ impl WeatherMsgData {
 
 impl fmt::Display for WeatherMsgData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}：{}°C-{}°C，{}", 
-            self.date, 
-            self.min, 
-            self.max, 
-            self.weather_description())
+        write!(
+            f,
+            "{}：{}°C-{}°C，{}",
+            self.date,
+            self.min,
+            self.max,
+            self.weather_description()
+        )
     }
 }
 
@@ -767,9 +764,9 @@ impl WeatherMsg {
     // 格式化输出带颜色的天气信息（用于终端显示）
     pub fn format_colored_weather(&self) -> String {
         use colored::*;
-        
+
         let mut result = String::new();
-        
+
         // 城市和描述
         let city = self.city();
         if city.is_empty() {
@@ -777,12 +774,12 @@ impl WeatherMsg {
         } else {
             result.push_str(&format!("{}天气", city).cyan().bold().to_string());
         }
-        
+
         // 添加描述信息（如果有）
         if !self.description.is_empty() {
             result.push_str(&format!("：{}", self.description).cyan().bold().to_string());
         }
-        
+
         // 获取并格式化天气数据
         let weather_data = self.data();
         if weather_data.is_empty() {
@@ -793,38 +790,49 @@ impl WeatherMsg {
                 if i > 0 {
                     result.push('\n');
                 }
-                
+
                 // 添加彩色格式
-                result.push_str(&format!("  Day {}: ", i+1).yellow().bold().to_string());
+                result.push_str(&format!("  Day {}: ", i + 1).yellow().bold().to_string());
                 result.push_str(&format!("日期: {}, ", day.date).cyan().bold().to_string());
-                result.push_str(&format!("温度: {}°C-{}°C, ", 
+                result.push_str(&format!(
+                    "温度: {}°C-{}°C, ",
                     day.min.to_string().blue().bold(),
-                    day.max.to_string().red().bold()));
-                result.push_str(&format!("天气: {}", day.weather_description()).bright_cyan().bold().to_string());
+                    day.max.to_string().red().bold()
+                ));
+                result.push_str(
+                    &format!("天气: {}", day.weather_description())
+                        .bright_cyan()
+                        .bold()
+                        .to_string(),
+                );
             }
         }
-        
+
         result
     }
 
     pub fn data(&self) -> Vec<WeatherMsgData> {
-        if self.dates.is_empty() || self.codes.is_empty() || 
-           self.min_temps.is_empty() || self.max_temps.is_empty() {
+        if self.dates.is_empty()
+            || self.codes.is_empty()
+            || self.min_temps.is_empty()
+            || self.max_temps.is_empty()
+        {
             return Vec::new();
         }
-        
+
         // 安全地分割字符串，处理可能的尾部空字符串
         let dates: Vec<&str> = self.dates.split(',').collect();
         let codes: Vec<&str> = self.codes.split(',').collect();
         let min_temps: Vec<&str> = self.min_temps.split(',').collect();
         let max_temps: Vec<&str> = self.max_temps.split(',').collect();
-        
+
         // 计算最小长度，避免索引越界
-        let min_len = dates.len()
+        let min_len = dates
+            .len()
             .min(codes.len())
             .min(min_temps.len())
             .min(max_temps.len());
-            
+
         if min_len == 0 {
             return Vec::new();
         }
@@ -836,12 +844,12 @@ impl WeatherMsg {
                 Ok(value) => value,
                 Err(_) => 0.0,
             };
-            
+
             let max_temp = match max_temps[i].trim().parse::<f64>() {
                 Ok(value) => value,
                 Err(_) => 0.0,
             };
-            
+
             result.push(WeatherMsgData {
                 date: dates[i].trim().to_string(),
                 code: codes[i].trim().to_string(),
@@ -864,38 +872,38 @@ impl From<&Value> for WeatherMsg {
             } else if let Some(title) = obj.get("title").and_then(|v| v.as_str()) {
                 weather_msg.title = title.to_string();
             }
-            
+
             if let Some(description) = obj.get("st").and_then(|v| v.as_str()) {
                 weather_msg.description = description.to_string();
             } else if let Some(description) = obj.get("description").and_then(|v| v.as_str()) {
                 weather_msg.description = description.to_string();
             }
-            
+
             if let Some(dates) = obj.get("date").and_then(|v| v.as_str()) {
                 weather_msg.dates = dates.to_string();
             }
-            
+
             if let Some(codes) = obj.get("weatherCode").and_then(|v| v.as_str()) {
                 weather_msg.codes = codes.to_string();
             }
-            
+
             if let Some(min_temps) = obj.get("min").and_then(|v| v.as_str()) {
                 weather_msg.min_temps = min_temps.to_string();
             }
-            
+
             if let Some(max_temps) = obj.get("max").and_then(|v| v.as_str()) {
                 weather_msg.max_temps = max_temps.to_string();
             }
-            
+
             if let Some(type_) = obj.get("type").and_then(|v| v.as_str()) {
                 weather_msg.type_ = type_.to_string();
             }
-            
+
             if let Some(msg_type) = obj.get("msgType").and_then(|v| v.as_str()) {
                 weather_msg.msg_type = msg_type.to_string();
             }
         }
-        
+
         weather_msg
     }
 }
@@ -908,12 +916,12 @@ impl fmt::Display for WeatherMsg {
         } else {
             write!(f, "{}天气", city)?;
         }
-        
+
         // 添加描述信息（如果有）
         if !self.description.is_empty() {
             write!(f, "：{}", self.description)?;
         }
-        
+
         // 获取并格式化天气数据
         let weather_data = self.data();
         if weather_data.is_empty() {
@@ -924,10 +932,10 @@ impl fmt::Display for WeatherMsg {
                 if i > 0 {
                     write!(f, "\n")?;
                 }
-                write!(f, "  Day {}: {}", i+1, day)?;
+                write!(f, "  Day {}: {}", i + 1, day)?;
             }
         }
-        
+
         Ok(())
     }
 }
@@ -988,22 +996,18 @@ impl From<&Value> for MusicMsg {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChatRoomNode {
     pub node: String,
     pub name: String,
     pub online: i32,
 }
 
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ChatRoomNodeInfo {
     pub recommend: ChatRoomNode,
     pub avaliable: Vec<ChatRoomNode>,
 }
-
 
 // 聊天室数据类型
 #[derive(Debug, Clone)]

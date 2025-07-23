@@ -1,15 +1,51 @@
 use anyhow::Result;
-use fishpi_rust::FishPi;
+use fishpi_rust::{FishPi, UserInfo};
+use std::time::{Duration, Instant};
 use std::{borrow::Cow, sync::Arc};
+use tokio::sync::Mutex;
 
 pub struct AuthService {
     client: Arc<FishPi>,
+    user_info: Arc<Mutex<Option<(UserInfo, Instant)>>>,
 }
 
 impl AuthService {
     pub fn new(client: Arc<FishPi>) -> Self {
-        Self { client }
+        Self {
+            client,
+            user_info: Arc::new(Mutex::new(None)),
+        }
     }
+    /// 获取用户信息（带缓存，5分钟过期）
+    pub async fn get_user_info_cached(&self) -> Result<UserInfo> {
+        let mut cache = self.user_info.lock().await;
+        let now = Instant::now();
+        let expire = Duration::from_secs(300); // 5分钟
+
+        // 检查缓存是否可用
+        if let Some((info, ts)) = &*cache {
+            if now.duration_since(*ts) < expire {
+                return Ok(info.clone());
+            }
+        }
+
+        // 缓存无效，重新获取
+        let result = self.client.user.get_info().await;
+        if result.success && result.data.is_some() {
+            let user_info = result.data.unwrap();
+            if let Some(user_data) = user_info.data {
+                *cache = Some((user_data.clone(), now));
+                return Ok(user_data);
+            }
+        }
+        Err(anyhow::anyhow!("获取用户信息失败"))
+    }
+
+    // /// 清除缓存
+    // pub async fn clear_user_info_cache(&self) {
+    //     let mut cache = self.user_info.lock().await;
+    //     *cache = None;
+    // }
 
     /// 自动登录：优先使用保存的token，如果无效则使用提供的凭据
     pub async fn login(&self, username: &str, password: &str, mfacode: Option<&str>) -> Result<()> {
@@ -88,17 +124,9 @@ impl AuthService {
         Ok(result.success)
     }
 
-    /// 获取用户信息
-    pub async fn get_user_info(&self) -> Result<String> {
-        let result = self.client.user.get_info().await;
-        if result.success && result.data.is_some() {
-            let user_info = result.data.unwrap();
-            let user_data = user_info.data.unwrap();
-            let display_name = user_data.all_name();
-            Ok(display_name)
-        } else {
-            Err(anyhow::anyhow!("获取用户信息失败"))
-        }
+    /// 获取username
+    pub async fn get_user_name(&self) -> Result<String> {
+        self.get_user_info_cached().await.map(|info| info.user_name)
     }
 
     /// 登出
@@ -107,8 +135,7 @@ impl AuthService {
 
         match std::fs::remove_file("token.txt") {
             Ok(_) => {}
-            Err(_) => {
-            }
+            Err(_) => {}
         }
 
         Ok(())

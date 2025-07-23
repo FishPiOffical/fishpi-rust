@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
 - [`FishPi`]: 主客户端，提供对所有服务的访问
 - [`UserService`]: 用户相关操作
 - [`ChatroomService`]: 聊天室相关操作
-- [`ArticleService`]: 帖子相关操作 
+- [`ArticleService`]: 帖子相关操作
 - [`CommentService`]: 评论相关操作
 - [`ChatService`]: 私信相关操作
 - [`NoticeService`]: 通知相关操作

@@ -1,15 +1,14 @@
-use rustyline::{Editor, Config, CompletionType};
+use colored::*;
+use fishpi_rust::ChatRoomUser;
 use rustyline::completion::{Completer, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::history::FileHistory;
 use rustyline::validate::Validator;
+use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Context, Helper};
-use colored::*;
 use std::io;
-use fishpi_rust::ChatRoomUser;
-
 
 pub struct CommandItem {
     pub name: &'static str,
@@ -33,7 +32,7 @@ impl CommandCompleter {
     fn set_commands(&mut self, commands: Vec<CommandItem>) {
         self.commands = commands;
     }
-    
+
     pub fn set_users(&mut self, users: Vec<ChatRoomUser>) {
         self.users = users;
     }
@@ -79,21 +78,23 @@ impl Completer for CommandCompleter {
         }
 
         // @用户名补全
-        if let Some(at_pos) = line.rfind('@') {
-            if at_pos < pos {
-                let prefix = &line[at_pos + 1..pos];
-                let candidates: Vec<Pair> = self
-                    .users
-                    .iter()
-                    .filter(|user| user.user_name.to_lowercase().starts_with(&prefix.to_lowercase()))
-                    .map(|user| Pair {
-                        display: user.user_name.cyan().to_string(),
-                        replacement: user.user_name.clone(),
-                    })
-                    .collect();
+        if let Some(at_pos) = line[..pos].rfind('@') {
+            let prefix = &line[at_pos + 1..pos];
+            let candidates: Vec<Pair> = self
+                .users
+                .iter()
+                .filter(|user| {
+                    user.user_name
+                        .to_lowercase()
+                        .starts_with(&prefix.to_lowercase())
+                })
+                .map(|user| Pair {
+                    display: format!("@{}", user.user_name.cyan()),
+                    replacement: user.user_name.clone(),
+                })
+                .collect();
 
-                return Ok((at_pos + 1, candidates));
-            }
+            return Ok((at_pos + 1, candidates));
         }
 
         Ok((0, vec![]))
@@ -127,7 +128,7 @@ impl CrosstermInputHandler {
             helper.set_commands(commands);
         }
     }
-    
+
     pub fn set_users(&mut self, users: Vec<ChatRoomUser>) {
         if let Some(helper) = self.editor.helper_mut() {
             helper.set_users(users);
@@ -161,7 +162,7 @@ impl CrosstermInputHandler {
         use std::io::Write;
         print!("{}", prompt);
         io::stdout().flush()?;
-        
+
         match rpassword::read_password() {
             Ok(password) => Ok(Some(password)),
             Err(_) => Ok(None),

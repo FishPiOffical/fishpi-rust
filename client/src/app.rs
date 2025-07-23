@@ -57,7 +57,7 @@ impl App {
         match self.auth_service.try_login_with_saved_token().await {
             Ok(()) => {
                 println!("{}", "登录成功!".green().bold());
-                self.username = self.auth_service.get_user_info().await?;
+                self.username = self.auth_service.get_user_name().await?;
                 return Ok(true);
             }
             Err(_) => {
@@ -97,7 +97,7 @@ impl App {
                             {
                                 Ok(()) => {
                                     println!("{}", "登录成功!".green().bold());
-                                    self.username = self.auth_service.get_user_info().await?;
+                                    self.username = self.auth_service.get_user_name().await?;
                                     return Ok(true);
                                 }
                                 Err(e) => {

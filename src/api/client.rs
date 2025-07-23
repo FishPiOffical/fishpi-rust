@@ -333,16 +333,24 @@ impl ApiClient {
         result
     }
 
-    pub async fn get_html(&self, path: &str, params: Option<HashMap<String, String>>) -> Result<String> {
+    pub async fn get_html(
+        &self,
+        path: &str,
+        params: Option<HashMap<String, String>>,
+    ) -> Result<String> {
         let mut url = self.build_url(path).await;
-        
+
         if let Some(params) = params {
             url = Self::add_params_to_url(&url, params);
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            )
             .send()
             .await?;
 
@@ -359,5 +367,4 @@ impl ApiClient {
 
         Ok(text)
     }
-    
 }
