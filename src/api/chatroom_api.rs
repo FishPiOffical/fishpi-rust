@@ -237,7 +237,7 @@ impl ChatroomApi {
 
         Ok(response)
     }
-    
+
     /// 获取弹幕发送价格
     ///
     /// 返回弹幕价格信息
@@ -318,7 +318,7 @@ impl ChatroomApi {
             .await?;
 
         if response.code != 0 || response.data.is_none() {
-            return Err(anyhow!("获取聊天室WebSocket地址失败: {:?}", response.msg));
+            return Err(anyhow!("获取聊天室WebSocket地址失败"));
         }
 
         Ok(response.data.unwrap())
@@ -328,7 +328,6 @@ impl ChatroomApi {
     ///
     /// 返回节点信息
     pub async fn get_node_info(&self) -> Result<ChatRoomNodeInfo> {
-        log::debug!("获取聊天室节点信息");
 
         let token = self.check_token("获取聊天室节点信息").await?;
         let params = self.build_params(HashMap::new(), token);
@@ -339,12 +338,10 @@ impl ChatroomApi {
             .await?;
 
         if response.code != 0 || response.data.is_none() {
-            return Err(anyhow!("获取聊天室节点信息失败: {:?}", response.msg));
+            return Err(anyhow!("获取聊天室节点信息失败"));
         }
 
-        // 如果返回了新的apiKey，更新客户端token
         if let Some(api_key) = response.api_key {
-            log::debug!("使用新的API密钥");
             self.client.set_token(Some(api_key)).await;
         }
 
