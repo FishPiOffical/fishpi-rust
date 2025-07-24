@@ -587,8 +587,7 @@ impl ChatroomCommand {
         if result.success {
             if let Some(response) = result.data {
                 if let Some(messages) = response.data {
-                    println!("聊天室历史消息:");
-                    for msg in messages.iter() {
+                    for msg in messages.iter().rev() {
                         if msg.is_redpacket() {
                             let redpacket = msg.redpacket().unwrap();
                             println!(
