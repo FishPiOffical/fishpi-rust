@@ -3,9 +3,9 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*' # 匹配 vX.Y.Z 格式的标签
 
-# 添加权限配置
+# 添加权限配置，适用于所有 jobs
 permissions:
   contents: write
   issues: write
@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -76,38 +78,52 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Get version
+      - name: Get current tag version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
 
       - name: Get previous tag
         id: prev_tag
         run: |
-          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          CURRENT_TAG="${GITHUB_REF_NAME}"
           git fetch --tags
-          PREV_TAG=$(git tag --sort=-creatordate | grep -v "$CURRENT_TAG" | tail -n 1)
-          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "$CURRENT_TAG" | head -n 1)
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found. This might be the first release."
+            echo "PREV_TAG=" >> $GITHUB_OUTPUT
+          else
+            echo "Previous tag found: $PREV_TAG"
+            echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Generate changelog
+      - name: Generate changelog 
         id: changelog
         run: |
-          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          CURRENT_TAG="${GITHUB_REF_NAME}"
           PREV_TAG="${{ steps.prev_tag.outputs.PREV_TAG }}"
+          
+          echo "Generating changelog from $PREV_TAG to $CURRENT_TAG"
+          
+          CHANGELOG_CONTENT=""
           if [ -z "$PREV_TAG" ]; then
-            git log --pretty=format:"* %s (%an)" > changelog.txt
+            CHANGELOG_CONTENT=$(git log --pretty=format:"* %s (%an)")
           else
-            git log "$PREV_TAG..$CURRENT_TAG" --pretty=format:"* %s (%an)" > changelog.txt
+            CHANGELOG_CONTENT=$(git log "$PREV_TAG..$CURRENT_TAG" --pretty=format:"* %s (%an)")
           fi
-          CHANGELOG_CONTENT=$(cat changelog.txt)
+          
           echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
