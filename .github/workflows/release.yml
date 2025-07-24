@@ -89,16 +89,20 @@ jobs:
       - name: Get previous tag
         id: prev_tag
         run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
           git fetch --tags
-          echo "PREV_TAG=$(git tag --sort=-creatordate | grep -v ${{ github.ref_name }} | head -n 1)" >> $GITHUB_OUTPUT
+          PREV_TAG=$(git tag --sort=-creatordate | grep -v "$CURRENT_TAG" | tail -n 1)
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         id: changelog
         run: |
-          if [ -z "${{ steps.prev_tag.outputs.PREV_TAG }}" ]; then
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          PREV_TAG="${{ steps.prev_tag.outputs.PREV_TAG }}"
+          if [ -z "$PREV_TAG" ]; then
             git log --pretty=format:"* %s (%an)" > changelog.txt
           else
-            git log ${{ steps.prev_tag.outputs.PREV_TAG }}..${{ github.ref_name }} --pretty=format:"* %s (%an)" > changelog.txt
+            git log "$PREV_TAG..$CURRENT_TAG" --pretty=format:"* %s (%an)" > changelog.txt
           fi
           CHANGELOG_CONTENT=$(cat changelog.txt)
           echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
