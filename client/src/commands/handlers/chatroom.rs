@@ -11,8 +11,7 @@ use crossterm::{
     cursor, execute,
     terminal::{Clear, ClearType},
 };
-use fishpi_rust::{ChatRoomUser, GestureType};
-use fishpi_rust::{ChatRoomDataContent, RedPacketType};
+use fishpi_rust::{ChatRoomDataContent, RedPacketType, ChatRoomUser, GestureType};
 use regex::Regex;
 use std::borrow::Cow;
 use std::io::{self, Write};
@@ -378,6 +377,8 @@ impl ChatroomCommand {
         let online_users = Arc::clone(&self.online_users);
         let auth = Arc::clone(&self.context.auth);
         let client = Arc::clone(&self.context.client);
+        let redpacket_cache = Arc::clone(&self.redpacket_handler.redpacket_cache);
+
         let result = self
             .context
             .client
@@ -386,11 +387,22 @@ impl ChatroomCommand {
                 let online_users = Arc::clone(&online_users);
                 let auth = Arc::clone(&auth);
                 let client = Arc::clone(&client);
+                let redpacket_cache = Arc::clone(&redpacket_cache);
                 tokio::spawn(async move {
                     match data.data {
                         ChatRoomDataContent::Message(msg) => {
                             if msg.is_redpacket() {
                                 let redpacket = msg.redpacket().unwrap();
+
+                                let user_name = auth.get_user_name().await.unwrap_or_default();
+                                if redpacket.type_ == "specify" {
+                                    if redpacket.receivers.contains(&user_name) {
+                                        redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
+                                    }
+                                } else {
+                                    redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
+                                }
+
                                 println!(
                                     "\r[{}] {} 发送了 [{}: {}] 红包详情: {} 个, {} 积分",
                                     msg.oid.bright_black(),
@@ -482,6 +494,9 @@ impl ChatroomCommand {
                             println!("\r{}: {}", "💬 话题变更".yellow().bold(), topic.yellow());
                         }
                         ChatRoomDataContent::RedPacketStatus(status) => {
+                            if status.got >= status.count {
+                                redpacket_cache.lock().unwrap().remove(&status.oid);
+                            }
                             println!(
                                 "\r{} {} 领取了 {} 的红包 {} / {}",
                                 Local::now().format("%H:%M:%S").to_string().blue(),

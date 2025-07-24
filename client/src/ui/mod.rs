@@ -94,6 +94,16 @@ impl Completer for CommandCompleter {
             return Ok((at_pos + 1, candidates));
         }
 
+        if line.trim().is_empty() {
+            return Ok((
+                0,
+                vec![Pair {
+                    display: ":rp .".green().to_string(),
+                    replacement: ":rp .".to_string(),
+                }],
+            ));
+        }
+
         Ok((0, vec![]))
     }
 }

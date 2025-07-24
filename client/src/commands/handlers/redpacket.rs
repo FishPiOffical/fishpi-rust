@@ -2,15 +2,22 @@ use crate::commands::{Command, CommandContext, CommandResult};
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::*;
-use fishpi_rust::GestureType;
+use fishpi_rust::{GestureType, RedPacketMessage, RedPacketType};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 pub struct RedpacketCommand {
     context: CommandContext,
+    pub redpacket_cache: Arc<Mutex<HashMap<String, RedPacketMessage>>>,
+
 }
 
 impl RedpacketCommand {
     pub fn new(context: CommandContext) -> Self {
-        Self { context }
+        Self {
+            context,
+            redpacket_cache: Arc::new(Mutex::new(HashMap::new())),
+        }
     }
 
     /// 处理红包相关命令
@@ -34,6 +41,8 @@ impl RedpacketCommand {
                     "specify" | "sp" => self.handle_specify_command(&parts[2..]).await?,
                     "heartbeat" | "h" => self.handle_heartbeat_command(&parts[2..]).await?,
                     "gesture" | "g" => self.handle_gesture_command(&parts[2..]).await?,
+                    "list" | "l" => self.handle_list_command().await?,
+                    "." => self.handle_auto_open_command().await?,
                     "help" | "-h" | "--help" => self.show_redpacket_help(),
                     _ => {
                         println!("{}: {}", "未知红包命令".red(), parts[1]);
@@ -127,6 +136,20 @@ impl RedpacketCommand {
         }
 
         if let Some(info) = &result.data {
+            if info.info.count == info.info.got {
+                println!("{}", "红包已领完".yellow());
+                println!("{}", "红包详情:\n===============================".red().bold());
+                for i in info.who.iter() {
+                    println!(
+                        "[{}]{}: {} 积分",
+                        i.time.to_string().blue(),
+                        i.user_name.green(),
+                        i.money.to_string().yellow().bold()
+                    );
+                }
+                println!("{}", "===============================".red());
+                return Ok(());
+            }
             let user_name = self.context.auth.get_user_name().await?;
             if let Some(got) = info.who.iter().find(|got| got.user_name == user_name) {
                 println!(
@@ -444,6 +467,85 @@ impl RedpacketCommand {
                 return Ok(());
             }
         }
+    }
+
+    /// 显示当前可领取的红包列表
+    async fn handle_list_command(&self) -> Result<()> {
+        let cache = self.redpacket_cache.lock().unwrap();
+        if cache.is_empty() {
+            println!("{}", "当前没有可领取的红包".yellow());
+        } else {
+            println!("{}", "当前可领取的红包:".bold());
+            for (id, info) in cache.iter().enumerate() {
+                let type_name = RedPacketType::to_name(&info.1.type_);
+                println!(
+                    "  {}. {} [{}] {} 个, 共 {} 积分, 已领取 {}/{}",
+                    id + 1,
+                    info.0.bright_black(),
+                    type_name.red(),
+                    info.1.count,
+                    info.1.money.to_string().bright_green(),
+                    info.1.got.to_string().bright_red(),
+                    info.1.count
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// 自动打开红包
+    async fn handle_auto_open_command(&self) -> Result<()> {
+        if self.redpacket_cache.lock().unwrap().is_empty() {
+            println!("{}", "当前没有可领取的红包".yellow());
+            return Ok(());
+        }
+        let oids: Vec<(String, RedPacketMessage)> = {
+            let cache = self.redpacket_cache.lock().unwrap();
+            cache
+                .iter()
+                .map(|(id, msg)| (id.clone(), msg.clone()))
+                .collect()
+        };
+        for (id, msg) in oids {
+            if msg.type_ == RedPacketType::ROCK_PAPER_SCISSORS {
+            // 随机生成一个手势
+            let gesture = match rand::random_range(0..=2) {
+                0 => GestureType::Rock,
+                1 => GestureType::Scissors,
+                _ => GestureType::Paper,
+            };
+            let result = self.context.client.redpacket.open_with_gesture(&id, gesture).await;
+            if !result.success {
+                println!(
+                    "{}",
+                    result.message.unwrap_or("打开猜拳红包失败".to_string()).red()
+                );
+            }
+        } else {
+            let result = self.context.client.redpacket.open(&id).await;
+            if !result.success {
+                println!(
+                    "{}",
+                    result.message.unwrap_or("打开红包失败".to_string()).red()
+                );
+            }
+            if let Some(info) = &result.data {
+                let user_name = self.context.auth.get_user_name().await?;
+                if let Some(got) = info.who.iter().find(|got| got.user_name == user_name) {
+                    println!(
+                        "你领取了 {} 积分 {} / {}",
+                        got.money.to_string().yellow().bold(),
+                        info.info.got.to_string().cyan(),
+                        info.info.count.to_string().cyan()
+                    );
+                } else {
+                    println!("{}", "红包已领完".yellow());
+                }
+            }
+        }
+    }
+
+        Ok(())
     }
 
     /// 显示红包帮助
