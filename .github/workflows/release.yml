@@ -100,9 +100,9 @@ jobs:
           else
             git log ${{ steps.prev_tag.outputs.PREV_TAG }}..${{ github.ref_name }} --pretty=format:"* %s (%an)" > changelog.txt
           fi
-echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-cat changelog.txt >> $GITHUB_OUTPUT
-echo "EOF" >> $GITHUB_OUTPUT
+          echo "CHANGELOG<<EOT" >> $GITHUB_OUTPUT
+          cat changelog.txt >> $GITHUB_OUTPUT
+          echo "EOT" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
