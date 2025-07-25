@@ -56,7 +56,6 @@ impl CommandContext {
             "article" | "a" => {
                 let mut command = ArticleCommand::new(self.clone());
                 command.execute(&[]).await?;
-                println!("文章模式暂未实现");
             }
             "notice" | "n" => {
                 // let mut command = NoticeCommand::new(self.clone());

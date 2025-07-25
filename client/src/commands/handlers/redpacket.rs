@@ -429,6 +429,40 @@ impl RedpacketCommand {
                 }
                 return Ok(());
             }
+            2 => {
+                // 两个参数，手势随机，第二个参数msg
+                let money: i32 = args[0].parse().unwrap_or(default_money);
+                let gesture = match rand::random_range(0..=2) {
+                    0 => GestureType::Rock,
+                    1 => GestureType::Scissors,
+                    2 => GestureType::Paper,
+                    _ => {
+                        println!(
+                            "{}: {}. 请使用 石头/剪刀/布 或 rock/scissors/paper",
+                            "无效的猜拳类型".red(),
+                            args[1]
+                        );
+                        return Ok(());
+                    }
+                };
+                let msg = args[1].to_string();
+                let result = self
+                    .context
+                    .client
+                    .redpacket
+                    .send_rock_paper_scissors(1, money, &msg, gesture)
+                    .await;
+                if !result.success {
+                    println!(
+                        "{}",
+                        result
+                            .message
+                            .unwrap_or("发送猜拳红包失败".to_string())
+                            .red()
+                    );
+                }
+                return Ok(());
+            }
             _ => {
                 let money: i32 = args[0].parse().unwrap_or(default_money);
                 let gesture = match args[1].to_lowercase().as_str() {
@@ -551,33 +585,28 @@ impl RedpacketCommand {
     /// 显示红包帮助
     fn show_redpacket_help(&self) {
         println!("{}", "红包命令帮助:".yellow().bold());
-        println!("  {:35} - 打开红包", ":rp open|o <红包ID>".green());
-        println!(
-            "  {:35} - 拼手气红包",
-            ":rp random|r <数量> <积分> [祝福语]".green()
-        );
-        println!(
-            "  {:35} - 平分红包",
-            ":rp average|a <数量> <积分> [祝福语]".green()
-        );
-        println!(
-            "  {:35} - 专属红包",
-            ":rp specify|sp <用户名> <积分> [祝福语]".green()
-        );
-        println!(
-            "  {:35} - 心跳红包",
-            ":rp heartbeat|h <数量> <积分> [祝福语]".green()
-        );
-        println!(
-            "  {:35} - 猜拳红包",
-            ":rp gesture|g <数量> <积分> <rock/paper/scissors> [祝福语]".green()
-        );
+        println!("  {:35} - 打开普通红包", ":rp open|o <红包ID>".green());
+        println!("  {:35} - 打开猜拳红包（可指定手势，手势可选：石头/剪刀/布 或 rock/scissors/paper）", ":rp open_gesture|og <红包ID> [手势]".green());
+        println!("  {:35} - 拼手气红包", ":rp random|r <数量> <积分> [祝福语]".green());
+        println!("  {:35} - 平分红包", ":rp average|a <数量> <积分> [祝福语]".green());
+        println!("  {:35} - 专属红包", ":rp specify|sp <用户名1,用户名2,...> <积分> [祝福语]".green());
+        println!("  {:35} - 心跳红包", ":rp heartbeat|h <数量> <积分> [祝福语]".green());
+        println!("  {:35} - 猜拳红包（手势可选：石头/剪刀/布 或 rock/scissors/paper）", ":rp gesture|g <积分> <手势> [祝福语]".green());
+        println!("  {:35} - 查看当前可领取红包列表", ":rp list|l".green());
+        println!("  {:35} - 自动领取所有可领取红包", ":rp .".green());
+        println!("  {:35} - 显示帮助信息", ":rp help|-h|--help".green());
+        println!();
+        println!("{}", "手势参数说明：".cyan());
+        println!("  石头/rock/0，剪刀/scissors/1，布/paper/2");
         println!();
         println!("{}", "示例:".cyan().bold());
         println!("{}", " :rp r 5 100 恭喜发财".yellow());
         println!("{}", " :rp o 1234567890".yellow());
-        println!("{}", " :rp g 3 50 rock 拿捏你!!".yellow());
+        println!("{}", " :rp og 1234567890 剪刀".yellow());
+        println!("{}", " :rp g 50 rock 拿捏你!!".yellow());
         println!("{}", " :rp sp 用户1,用户2 100 专属红包".yellow());
+        println!("{}", " :rp l".yellow());
+        println!("{}", " :rp .".yellow());
         println!();
     }
 }

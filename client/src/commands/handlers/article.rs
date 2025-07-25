@@ -57,6 +57,14 @@ impl ArticleCommand {
 
             if let Some(input) = input_handler.start_input_loop(&format!("{}", "看帖> ".green().bold())).await? {
                 let input = input.trim();
+
+                if let Some(target_mode) = self.context.is_switch_command(input) {
+                    if let Err(e) = self.context.execute_switch(target_mode).await {
+                        println!("切换失败: {}", e);
+                    }
+                    break;
+                }
+
                 if input == "q" {
                     break;
                 } else if input == "n" {

@@ -1,7 +1,6 @@
-use crate::ui::{CrosstermInputHandler, CommandCompleter};
 use crate::{
-    commands::{Command, CommandContext, CommandResult, handlers::RedpacketCommand},
-    ui::CommandItem,
+    commands::{Command, CommandContext, CommandResult, handlers::{RedpacketCommand, FilterCommand}},
+    ui::{CommandItem,CrosstermInputHandler, CommandCompleter}, utils::{is_quote_message,format_quote_message,filter_tail_content, strip_html_tags_chatroom}
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,7 +11,6 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use fishpi_rust::{ChatRoomDataContent, RedPacketType, ChatRoomUser, GestureType};
-use regex::Regex;
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -21,6 +19,7 @@ pub struct ChatroomCommand {
     context: CommandContext,
     online_users: Arc<Mutex<Vec<ChatRoomUser>>>,
     redpacket_handler: RedpacketCommand,
+    filter_handler: FilterCommand
 }
 
 impl ChatroomCommand {
@@ -29,6 +28,7 @@ impl ChatroomCommand {
             context: context.clone(),
             online_users: Arc::new(Mutex::new(vec![])),
             redpacket_handler: RedpacketCommand::new(context),
+            filter_handler: FilterCommand::new()
         }
     }
 }
@@ -59,14 +59,6 @@ impl Command for ChatroomCommand {
 }
 
 impl ChatroomCommand {
-    fn strip_html_tags(html: &str) -> String {
-        let blockquote_re = Regex::new(r"<blockquote[^>]*>.*?</blockquote>").unwrap();
-        let without_blockquote = blockquote_re.replace_all(html, "");
-
-        let re = Regex::new(r"<[^>]*>").unwrap();
-        re.replace_all(&without_blockquote, "").trim().to_string()
-    }
-
     async fn chatroom_loop(&self) -> Result<()> {
         let completer = CommandCompleter {
             commands: vec![],
@@ -240,6 +232,10 @@ impl ChatroomCommand {
                                 println!("红包命令处理失败: {}", e);
                             }
                         }
+                        cmd if cmd.starts_with(":bl") => {
+                            let args: Vec<&str> = cmd.trim().split_whitespace().skip(1).collect();
+                            self.filter_handler.handle_filter_cmd(&args);
+                        }
                         _ => {
                             self.send_message(&input).await;
                         }
@@ -255,121 +251,14 @@ impl ChatroomCommand {
         Ok(())
     }
 
-    // 检查是否是引用消息
-    fn is_quote_message(content: &str) -> bool {
-        content.contains("##### 引用") || content.lines().any(|line| line.trim().starts_with('>'))
-    }
-
-    // 格式化引用消息
-    fn format_quote_message(content: &str) -> String {
-        let mut result = String::new();
-        let mut quotes = Vec::new();
-
-        // 按 "##### 引用" 分割消息
-        let parts: Vec<&str> = content.split("##### 引用").collect();
-
-        // 第一部分是主要内容
-        if let Some(main_part) = parts.first() {
-            let main_content = main_part.trim();
-            if !main_content.is_empty() {
-                result.push_str(main_content);
-            }
-        }
-
-        // 处理每个引用部分
-        for (index, part) in parts.iter().skip(1).enumerate() {
-            // 提取用户名 (@用户名)
-            if let Some(at_pos) = part.find('@') {
-                let after_at = &part[at_pos..];
-                let username = if let Some(space_pos) = after_at.find(' ') {
-                    &after_at[..space_pos]
-                } else if let Some(bracket_pos) = after_at.find('[') {
-                    &after_at[..bracket_pos]
-                } else {
-                    after_at.split_whitespace().next().unwrap_or("")
-                };
-
-                // 查找引用内容 (> 开头的行)
-                let lines: Vec<&str> = part.lines().collect();
-                let mut quote_content = Vec::new();
-                let mut max_level = 0;
-
-                for line in lines {
-                    let trimmed = line.trim();
-                    if trimmed.starts_with('>') {
-                        let level = trimmed.chars().take_while(|&c| c == '>').count();
-                        max_level = max_level.max(level);
-                        let collected: String = trimmed.chars().skip(level).collect();
-                        let content_part = collected.trim().to_string();
-                        if !content_part.is_empty() {
-                            quote_content.push(content_part);
-                        }
-                    }
-                }
-
-                if !quote_content.is_empty() {
-                    let indent = "    ".repeat(index + 1);
-                    quotes.push(format!(
-                        "{}└─引用 {}: {}",
-                        indent,
-                        username.green().bold(),
-                        quote_content.join(" ")
-                    ));
-                } else {
-                    // 如果没有找到 > 内容，尝试提取链接后的文本
-                    if let Some(link_end) = part.find(')') {
-                        let after_link = &part[link_end + 1..];
-                        let remaining_text = after_link.trim();
-                        if !remaining_text.is_empty() {
-                            let indent = "    ".repeat(index + 1);
-                            quotes.push(format!(
-                                "{}└─引用 {}: {}",
-                                indent,
-                                username.green().bold(),
-                                remaining_text
-                            ));
-                        }
-                    }
-                }
-            }
-        }
-
-        // 组合结果
-        if !quotes.is_empty() {
-            if !result.is_empty() {
-                result.push('\n');
-            }
-            result.push_str(&quotes.join("\n"));
-        }
-
-        result
-    }
-
-    fn filter_tail_content(content: &str) -> String {
-        // 分割成行，检查是否有以 > 开头的行
-        let lines: Vec<&str> = content.split('\n').collect();
-        for (i, line) in lines.iter().enumerate() {
-            let trimmed = line.trim();
-            if trimmed.starts_with('>') {
-                // 找到引用行，只保留之前的内容
-                let previous_content = lines[..i].join("\n").trim().to_string();
-                // 如果前面的内容为空，则返回原始内容，避免空消息
-                if previous_content.is_empty() {
-                    return content.to_string();
-                }
-                return previous_content;
-            }
-        }
-
-        // 没有找到引用行，返回原始内容
-        content.to_string()
-    }
 
     async fn register_message_handler(&self) -> Result<()> {
         let online_users = Arc::clone(&self.online_users);
         let auth = Arc::clone(&self.context.auth);
         let client = Arc::clone(&self.context.client);
         let redpacket_cache = Arc::clone(&self.redpacket_handler.redpacket_cache);
+        let filter_handler = Arc::new(self.filter_handler.clone());
+        let filter_handler_arc = filter_handler.clone();
 
         let result = self
             .context
@@ -380,30 +269,57 @@ impl ChatroomCommand {
                 let auth = Arc::clone(&auth);
                 let client = Arc::clone(&client);
                 let redpacket_cache = Arc::clone(&redpacket_cache);
+                let filter_handler = filter_handler_arc.clone();
+
                 tokio::spawn(async move {
                     match data.data {
                         ChatRoomDataContent::Message(msg) => {
+                            let should_block = {
+                                let cfg = filter_handler.config.lock().unwrap();
+                                cfg.should_block(&msg.user_name, &msg.md_text())
+                            };
+                            if should_block {
+                                filter_handler.push_blocked_msg((*msg).clone());
+                                return;
+                            }
                             if msg.is_redpacket() {
                                 let redpacket = msg.redpacket().unwrap();
-
                                 let user_name = auth.get_user_name().await.unwrap_or_default();
                                 if redpacket.type_ == "specify" {
+                                    // 只有专属红包才需要显示接收人
                                     if redpacket.receivers.contains(&user_name) {
                                         redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
                                     }
+                                    let receivers = if !redpacket.receivers.is_empty() {
+                                        match serde_json::from_str::<Vec<String>>(&redpacket.receivers) {
+                                            Ok(list) => format!("{}", list.join(", ").green()),
+                                            Err(_) => format!("{}", redpacket.receivers.green()),
+                                        }
+                                    } else {
+                                        "".to_string()
+                                    };
+                                    println!(
+                                        "\r[{}] {} 发送了 [{}{}: {}] 红包详情: {} 个, {} 积分",
+                                        msg.oid.bright_black(),
+                                        msg.user_name.green(),
+                                        RedPacketType::to_name(&redpacket.type_).red(),
+                                        receivers,
+                                        redpacket.msg.trim().red(),
+                                        redpacket.count.to_string().yellow(),
+                                        redpacket.money.to_string().yellow(),
+                                    );
                                 } else {
                                     redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
+                                    println!(
+                                        "\r[{}] {} 发送了 [{}: {}] 红包详情: {} 个, {} 积分",
+                                        msg.oid.bright_black(),
+                                        msg.user_name.green(),
+                                        RedPacketType::to_name(&redpacket.type_).red(),
+                                        redpacket.msg.trim().red(),
+                                        redpacket.count.to_string().yellow(),
+                                        redpacket.money.to_string().yellow()
+                                    );
                                 }
-
-                                println!(
-                                    "\r[{}] {} 发送了 [{}: {}] 红包详情: {} 个, {} 积分",
-                                    msg.oid.bright_black(),
-                                    msg.user_name.green(),
-                                    RedPacketType::to_name(&redpacket.type_).red(),
-                                    redpacket.msg.trim().red(),
-                                    redpacket.count.to_string().yellow(),
-                                    redpacket.money.to_string().yellow()
-                                );
                             } else if msg.is_music() {
                                 let music = msg.music().unwrap();
                                 println!(
@@ -427,23 +343,23 @@ impl ChatroomCommand {
                                 );
                             } else {
                                 let content = msg.md_text();
-                                if Self::is_quote_message(&content) {
-                                    let formatted_content = Self::format_quote_message(&content);
+                                if is_quote_message(&content) {
+                                    let formatted_content = format_quote_message(&content);
                                     println!(
                                         "\r{} {}[{}]: {}",
                                         msg.time.blue().bold(),
                                         msg.all_name().green().bold(),
                                         msg.oid.bright_black(),
-                                        Self::filter_tail_content(&formatted_content)
+                                        filter_tail_content(&formatted_content)
                                     );
                                 } else {
-                                    let filtered_content = Self::filter_tail_content(&content);
+                                    let filtered_content = filter_tail_content(&content);
                                     println!(
                                         "\r{} {}[{}]: {}",
                                         msg.time.blue().bold(),
                                         msg.all_name().green().bold(),
                                         msg.oid.bright_black(),
-                                        Self::strip_html_tags(&filtered_content)
+                                        strip_html_tags_chatroom(&filtered_content)
                                     );
                                 }
                             }
@@ -616,7 +532,7 @@ impl ChatroomCommand {
                                 msg.time.blue().bold(),
                                 msg.all_name().green().bold(),
                                 msg.oid.bright_black(),
-                                Self::strip_html_tags(&msg.content_text())
+                                strip_html_tags_chatroom(&msg.content_text())
                             );
                         }
                     }

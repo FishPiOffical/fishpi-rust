@@ -155,6 +155,10 @@ impl ChatCommand {
 
     // 开始与指定用户的私聊
     async fn start_chat_with_user(&self, username: &str) -> Result<()> {
+        if self.context.handle_switch_command(username).await {
+            return Ok(());
+        }
+
         self.resgister_message_handler(Some(username)).await?;
         // 连接到与该用户的私聊频道
         let connect_result = self.context.client.chat.connect(Some(username)).await;

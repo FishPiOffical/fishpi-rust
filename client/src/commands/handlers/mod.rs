@@ -4,7 +4,9 @@ pub mod chat;
 pub mod chatroom;
 pub mod notice;
 pub mod redpacket;
+pub mod filter;
 
+pub use filter::FilterCommand;
 pub use article::ArticleCommand;
 pub use breezemoon::BreezemoonCommand;
 pub use chat::ChatCommand;
