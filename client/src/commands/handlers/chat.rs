@@ -43,7 +43,15 @@ impl Command for ChatCommand {
     }
 
     fn help(&self) -> &'static str {
-        ""
+        r#"
+        私聊命令:
+            :h [页码]      - 历史消息
+            :r             - 刷新消息
+            :read          - 标记已读
+            :rm <ID>   - 撤回消息
+            :cls           - 清屏
+            :q             - 退出
+        "#
     }
 }
 
@@ -93,7 +101,9 @@ impl ChatCommand {
                             continue;
                         }
                         ":help" | ":h" => {
-                            self.show_chat_help();
+                            println!("{}", self.help().green());
+                            self.context.show_switch_help();
+
                         }
                         cmd if cmd.starts_with(":history") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
@@ -110,13 +120,13 @@ impl ChatCommand {
                         ":read" => {
                             self.mark_read(username).await;
                         }
-                        cmd if cmd.starts_with(":revoke") => {
+                        cmd if cmd.starts_with(":rm") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
                             if parts.len() > 1 {
                                 let msg_id = parts[1];
                                 self.revoke_chat_message(msg_id).await;
                             } else {
-                                println!("{}", "用法: :revoke <消息ID>".yellow());
+                                println!("{}", "用法: :rm <消息ID>".yellow());
                             }
                         }
                         // 不是命令，直接发送消息
@@ -136,21 +146,6 @@ impl ChatCommand {
         }
 
         Ok(())
-    }
-
-    fn show_chat_help(&self) {
-        println!("{}", "私聊命令:".yellow());
-        println!("  {:12} - 历史消息", ":h [页码]".green());
-        println!("  {:12} - 刷新消息", ":r".green());
-        println!("  {:12} - 标记已读", ":read".green());
-        println!("  {:12} - 撤回消息", ":revoke <ID>".green());
-        println!("  {:12} - 清屏", ":cls".green());
-        println!("  {:12} - 退出", ":q".green());
-
-        // 显示通用的切换帮助
-        self.context.show_switch_help();
-
-        println!();
     }
 
     // 开始与指定用户的私聊

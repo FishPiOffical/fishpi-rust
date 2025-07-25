@@ -48,7 +48,7 @@ impl App {
     }
 
     fn show_welcome(&self) {
-        println!("{}", "欢迎使用 Rust 客户端 V2".bold().cyan());
+        println!("{}", "欢迎使用摸鱼派 Rust 客户端".bold().cyan());
         println!("{}", "=====================================".cyan());
     }
 
@@ -199,11 +199,14 @@ impl App {
     }
 
     fn show_help(&self) {
-        println!("{}", "FishPi 客户端命令:".yellow());
+        println!("{}", "FishPi 客户端全局命令:".yellow());
         println!("  {}       - 进入聊天室", "cr / :cr".green());
         println!("  {}        - 进入私聊", "c / :c".green());
+        println!("  {}      - 看帖", "a / :a".green());
         println!("  {}      - 显示帮助", "help".green());
         println!("  {}      - 退出程序", ":exit".green());
         println!("  {}     - 登出", ":logout".green());
+        println!();
+        println!("{}", "进入后，可输入 :help 查看对应命令帮助。".cyan());
     }
 }

@@ -143,13 +143,11 @@ impl FilterCommand {
             ["vb"] => {
                 self.view_blocked_msgs();
             }
+            ["help"] => {
+                println!("{}", self.help().green());
+            }
             _ => {
-                println!("{}", "用法：".yellow());
-                println!("{}", "  :bl user <用户名>   添加屏蔽用户".green());
-                println!("{}", "  :bl kw <关键字>     添加屏蔽前缀".green());
-                println!("{}", "  :bl re <正则>       添加屏蔽正则".green());
-                println!("{}", "  :bl rm user|kw|re <内容>   移除屏蔽项".yellow());
-                println!("{}", "  :bl list              查看所有屏蔽规则".cyan());
+                println!("{}", "无效的命令或参数，请使用 :bl help 查看帮助".red());
             }
         }
         cfg.save();
@@ -200,8 +198,14 @@ impl Command for FilterCommand {
     }
 
     fn help(&self) -> &'static str {
-        ":bl user <用户名> | kw <关键字> | re <正则>\n\
-         :bl rm user|kw|re <内容>\n\
-         :bl list"
+        r#"
+        消息过滤命令:
+            :bl user <用户名>         添加屏蔽用户
+            :bl kw <关键字>           添加屏蔽前缀
+            :bl re <正则>             添加屏蔽正则
+            :bl rm user|kw|re <内容>  移除屏蔽项
+            :bl list                  查看所有屏蔽规则
+            :bl vb                    查看最近被屏蔽的消息
+        "#
     }
 }

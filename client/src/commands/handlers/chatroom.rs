@@ -54,9 +54,23 @@ impl Command for ChatroomCommand {
     }
 
     fn help(&self) -> &'static str {
-        ""
+        r#"
+        聊天室命令:
+            :h [页码]      - 历史消息
+            :u             - 在线用户
+            :topic [内容]  - 话题
+            :revoke <ID>   - 撤回
+            :bg <内容>     - 弹幕
+            :mutes         - 禁言列表
+            :raw <ID>      - 消息原文
+            :cost          - 弹幕价格
+            :cls           - 清屏
+            :q             - 退出
+            :rp            - 红包
+            :bl            - 消息屏蔽/过滤
+        "#
+        }
     }
-}
 
 impl ChatroomCommand {
     async fn chatroom_loop(&self) -> Result<()> {
@@ -118,6 +132,10 @@ impl ChatroomCommand {
                 name: ":rp",
                 desc: "红包",
             },
+            CommandItem {
+                name: ":bl",
+                desc: "消息屏蔽/过滤",
+            },
         ]);
 
         loop {
@@ -151,7 +169,9 @@ impl ChatroomCommand {
                             continue;
                         }
                         ":help" | ":h" => {
-                            self.show_chatroom_help();
+                            println!("{}", self.help().green());
+                            self.context.show_switch_help();
+
                         }
                         cmd if cmd.starts_with(":history") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
@@ -451,25 +471,6 @@ impl ChatroomCommand {
         }
 
         Ok(())
-    }
-
-    fn show_chatroom_help(&self) {
-        println!("{}", "聊天室命令:".yellow());
-        println!("  {:12} - 历史消息", ":h [页码]".green());
-        println!("  {:12} - 在线用户", ":u".green());
-        println!("  {:12} - 话题", ":topic [内容]".green());
-        println!("  {:12} - 撤回", ":revoke <ID>".green());
-        println!("  {:12} - 弹幕", ":barrage <内容>".green());
-        println!("  {:12} - 禁言列表", ":mutes".green());
-        println!("  {:12} - 消息原文", ":raw <ID>".green());
-        println!("  {:12} - 弹幕价格", ":cost".green());
-        println!("  {:12} - 清屏", ":cls".green());
-        println!("  {:12} - 退出", ":q".green());
-
-        // 显示通用的切换帮助
-        self.context.show_switch_help();
-
-        println!();
     }
 
     async fn send_message(&self, message: &str) {

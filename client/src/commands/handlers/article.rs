@@ -86,7 +86,7 @@ impl ArticleCommand {
                         }
                     }
                 } else if input == "h" || input == "help" {
-                    println!("{}", self.help().yellow());
+                    println!("{}", self.help().green());
                 } else {
                     println!("{}", "未知命令，输入 h 查看帮助".yellow());
                 }
