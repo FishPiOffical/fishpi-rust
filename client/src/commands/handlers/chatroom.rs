@@ -5,6 +5,7 @@ use crate::{
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Local;
+use color_eyre::owo_colors::OwoColorize;
 use colored::*;
 use crossterm::{
     cursor, execute,
@@ -312,8 +313,8 @@ impl ChatroomCommand {
                                     }
                                     let receivers = if !redpacket.receivers.is_empty() {
                                         match serde_json::from_str::<Vec<String>>(&redpacket.receivers) {
-                                            Ok(list) => format!("{}", list.join(", ").green()),
-                                            Err(_) => format!("{}", redpacket.receivers.green()),
+                                            Ok(list) => format!(" to {}", list.join(", ").green()),
+                                            Err(_) => format!(" to {}", redpacket.receivers.green()),
                                         }
                                     } else {
                                         "".to_string()
@@ -366,7 +367,7 @@ impl ChatroomCommand {
                                 if is_quote_message(&content) {
                                     let formatted_content = format_quote_message(&content);
                                     println!(
-                                        "\r{} {}[{}]: {}",
+                                        "\r{} {} [{}]: {}",
                                         msg.time.blue().bold(),
                                         msg.all_name().green().bold(),
                                         msg.oid.bright_black(),
@@ -375,7 +376,7 @@ impl ChatroomCommand {
                                 } else {
                                     let filtered_content = filter_tail_content(&content);
                                     println!(
-                                        "\r{} {}[{}]: {}",
+                                        "\r{} {} [{}]: {}",
                                         msg.time.blue().bold(),
                                         msg.all_name().green().bold(),
                                         msg.oid.bright_black(),
@@ -546,6 +547,7 @@ impl ChatroomCommand {
                 result.message.unwrap_or("未知错误".to_string())
             );
         }
+        println!("{}","=".repeat(50).yellow());
     }
 
     async fn show_online_users(&self) {

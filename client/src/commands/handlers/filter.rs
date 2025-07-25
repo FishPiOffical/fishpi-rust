@@ -165,28 +165,31 @@ impl FilterCommand {
             return;
         }
         println!("{}", "最近被屏蔽的消息：".cyan());
-        for (_oid, msg) in cache.iter() {
-            let content = msg.md_text();
+        for (i, msg) in cache.iter().rev().enumerate() {
+            let content = msg.1.md_text();
             if is_quote_message(&content) {
                 let formatted_content = format_quote_message(&content);
                 println!(
-                    "\r{} {}[{}]: {}",
-                    msg.time.blue().bold(),
-                    msg.all_name().green().bold(),
-                    msg.oid.bright_black(),
+                    "\r{}. {} {}[{}]: {}",
+                    (i+1).to_string().bright_black().bold(),
+                    msg.1.time.blue().bold(),
+                    msg.1.all_name().green().bold(),
+                    msg.1.oid.bright_black(),
                     filter_tail_content(&formatted_content)
                 );
             } else {
                 let filtered_content = filter_tail_content(&content);
                 println!(
-                    "\r{} {}[{}]: {}",
-                    msg.time.blue().bold(),
-                    msg.all_name().green().bold(),
-                    msg.oid.bright_black(),
+                    "\r{}. {} {}[{}]: {}",
+                    (i+1).to_string().bright_black().bold(),
+                    msg.1.time.blue().bold(),
+                    msg.1.all_name().green().bold(),
+                    msg.1.oid.bright_black(),
                     strip_html_tags_chatroom(&filtered_content)
                 );
             }
         }
+
     }
 }
 
