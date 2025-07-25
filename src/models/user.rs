@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde::de::Deserializer;
+use std::collections::HashMap;
 
 // 应用角色
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
@@ -29,9 +31,30 @@ impl MetalAttr {
 pub struct Metal {
     pub name: String,
     pub description: String,
+    #[serde(deserialize_with = "deserialize_attr")]
     pub attr: MetalAttr,
     pub data: Option<String>,
-    pub enable: Option<String>,
+    pub enabled: Option<bool>,
+}
+
+fn deserialize_attr<'de, D>(deserializer: D) -> Result<MetalAttr, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let map: HashMap<_, _> = s
+        .split('&')
+        .filter_map(|kv| {
+            let mut parts = kv.splitn(2, '=');
+            Some((parts.next()?, parts.next()?))
+        })
+        .collect();
+
+    Ok(MetalAttr {
+        url: map.get("url").unwrap_or(&"").to_string(),
+        backcolor: map.get("backcolor").unwrap_or(&"").to_string(),
+        fontcolor: map.get("fontcolor").unwrap_or(&"").to_string(),
+    })
 }
 
 impl Metal {

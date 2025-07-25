@@ -55,6 +55,9 @@ rustyline = "16.0.0"
 crossterm = "0.29.0"
 color-eyre = "0.6.3"
 ratatui = "0.29.0"
+serde_repr = "0.1.12"
+serde_path_to_error = "0.1.17"
+
 
 [package.metadata.docs.rs]
 all-features = true

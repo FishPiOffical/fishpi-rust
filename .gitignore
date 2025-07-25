@@ -45,3 +45,4 @@ token.txt
 !client/**
 !.github/
 !.github/**
+.github/copilot-instructions.md

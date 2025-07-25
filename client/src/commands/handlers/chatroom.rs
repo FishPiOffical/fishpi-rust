@@ -54,23 +54,15 @@ impl Command for ChatroomCommand {
     }
 
     fn help(&self) -> &'static str {
-        // "聊天室命令:\n\
-        //  chatroom enter - 进入聊天室\n\
-        //  chatroom history [页码] - 查看历史消息\n\
-        //  chatroom users - 查看在线用户\n\
-        //  chatroom topic [新话题] - 查看或设置话题"
         ""
     }
 }
 
 impl ChatroomCommand {
-    /// 去除HTML标签的简单方法，先移除blockquote内容再去除其他标签
     fn strip_html_tags(html: &str) -> String {
-        // 先去除blockquote标签及其内容
         let blockquote_re = Regex::new(r"<blockquote[^>]*>.*?</blockquote>").unwrap();
         let without_blockquote = blockquote_re.replace_all(html, "");
 
-        // 再去除其他HTML标签
         let re = Regex::new(r"<[^>]*>").unwrap();
         re.replace_all(&without_blockquote, "").trim().to_string()
     }

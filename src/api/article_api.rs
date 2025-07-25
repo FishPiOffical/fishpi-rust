@@ -121,15 +121,10 @@ impl ArticleApi {
             return Err(anyhow!(error_msg));
         }
 
-        // 使用新的 from_json 方法解析数据
         match ArticleList::from_json(&result["data"]) {
             Ok(article_list) => Ok(article_list),
             Err(e) => {
                 println!("解析文章列表失败: {}", e);
-                println!(
-                    "原始数据: {}",
-                    serde_json::to_string_pretty(&result["data"])?
-                );
                 Err(anyhow!("解析文章列表失败: {}", e))
             }
         }
@@ -290,10 +285,6 @@ impl ArticleApi {
             Ok(article) => Ok(article),
             Err(e) => {
                 println!("解析文章详情失败: {}", e);
-                println!(
-                    "原始数据: {}",
-                    serde_json::to_string_pretty(&result["data"]["article"])?
-                );
                 Err(anyhow!("解析文章详情失败: {}", e))
             }
         }
