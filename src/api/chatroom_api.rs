@@ -284,17 +284,22 @@ impl ChatroomApi {
     ///
     /// 返回消息原文
     pub async fn get_raw_message(&self, oid: &str) -> Result<String> {
-        log::debug!("获取消息原文: {}", oid);
+        let token = self.client.get_token().await;
+        let params = self.build_params(HashMap::new(), token);
 
         let response = self
             .client
-            .get::<String>(&format!("/cr/raw/{}", oid), None)
+            .get_html(&format!("/cr/raw/{}", oid), Some(params))
             .await?;
+        
+        let re = Regex::new(r"^(.*?)\r\n\n").unwrap();
+        if let Some(caps) = re.captures(&response) {
+            if let Some(matched) = caps.get(1) {
+                return Ok(matched.as_str().to_string());
+            }
+        }
 
-        let re = Regex::new(r"<!--.*?-->").unwrap();
-        let raw = re.replace_all(&response, "").to_string();
-
-        Ok(raw)
+        Ok(response)
     }
 
     /// 获取聊天室WebSocket地址

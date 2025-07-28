@@ -127,3 +127,19 @@ pub fn filter_tail_content(content: &str) -> String {
     // 没有找到引用行，返回原始内容
     content.to_string()
 }
+
+pub fn format_reply_message(message_id: &str, reply_content: &str, original_content: Option<&str>, username: Option<&str>) -> String {
+    let quoted_msg_url = format!("https://fishpi.cn/cr#chatroom{}", message_id);
+    if let (Some(user), Some(content)) = (username, original_content) {
+        let preview = content.trim().to_string();
+        format!(
+            "{}\n\n##### 引用 @{} [↩]({} \"跳转至原消息\")\n> {}",
+            reply_content, user, quoted_msg_url, preview
+        )
+    } else {
+        format!(
+            "{}\n\n##### 引用 [↩]({} \"跳转至原消息\")",
+            reply_content, quoted_msg_url
+        )
+    }
+}

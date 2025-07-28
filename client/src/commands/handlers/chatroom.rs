@@ -5,9 +5,10 @@ use crate::{
     },
     ui::{CommandCompleter, CommandItem, CrosstermInputHandler},
     utils::{
-        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom,
+        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom, format_reply_message
     },
 };
+use lru::LruCache;
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Local;
@@ -17,7 +18,7 @@ use crossterm::{
     cursor, execute,
     terminal::{Clear, ClearType},
 };
-use fishpi_rust::{ChatRoomDataContent, ChatRoomUser, GestureType, RedPacketType};
+use fishpi_rust::{ChatRoomDataContent, ChatRoomMessage, ChatRoomUser, GestureType, RedPacketType};
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -27,6 +28,8 @@ pub struct ChatroomCommand {
     online_users: Arc<Mutex<Vec<ChatRoomUser>>>,
     redpacket_handler: RedpacketCommand,
     filter_handler: FilterCommand,
+    message_cache: Arc<Mutex<LruCache<String, ChatRoomMessage>>>,
+
 }
 
 impl ChatroomCommand {
@@ -36,6 +39,7 @@ impl ChatroomCommand {
             online_users: Arc::new(Mutex::new(vec![])),
             redpacket_handler: RedpacketCommand::new(context),
             filter_handler: FilterCommand::new(),
+            message_cache: Arc::new(Mutex::new(LruCache::new(std::num::NonZeroUsize::new(128).unwrap()))),
         }
     }
 }
@@ -175,11 +179,11 @@ impl ChatroomCommand {
                             execute!(io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))?;
                             continue;
                         }
-                        ":help" | ":h" => {
+                        ":help" => {
                             println!("{}", self.help().green());
                             self.context.show_switch_help();
                         }
-                        cmd if cmd.starts_with(":history") => {
+                        cmd if cmd.starts_with(":history") || cmd.starts_with(":h") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
                             let page = if parts.len() > 1 {
                                 parts[1].parse().unwrap_or(1)
@@ -198,15 +202,6 @@ impl ChatroomCommand {
                                 self.set_topic(&topic).await;
                             } else {
                                 self.show_current_topic().await;
-                            }
-                        }
-                        cmd if cmd.starts_with(":revoke") => {
-                            let parts: Vec<&str> = cmd.split_whitespace().collect();
-                            if parts.len() > 1 {
-                                let oid = parts[1];
-                                self.revoke_message(oid).await;
-                            } else {
-                                println!("{}", "用法: :revoke <消息ID>".yellow());
                             }
                         }
                         cmd if cmd.starts_with(":bg") => {
@@ -262,6 +257,22 @@ impl ChatroomCommand {
                             let args: Vec<&str> = cmd.split_whitespace().skip(1).collect();
                             self.filter_handler.handle_filter_cmd(&args);
                         }
+                        cmd if cmd.starts_with(":r ") || cmd.starts_with(":reply ") => {
+                            let parts: Vec<&str> = cmd.split_whitespace().collect();
+                            if parts.len() > 2 {
+                                let oid = parts[1];
+                                let reply_content = parts[2..].join(" ");
+                                let raw_content = self.context.client.chatroom.get_raw_message(oid).await?;
+                                let user_name = {
+                                    let mut cache = self.message_cache.lock().unwrap();
+                                    cache.get(oid).map(|msg| msg.user_name.clone()).unwrap_or_default()
+                                };
+                                let msg = format_reply_message(oid, &reply_content, Some(raw_content.as_str()), Some(user_name.as_str()));
+                                self.send_message(&msg).await;
+                            } else {
+                                println!("{}", "用法: :r <消息ID> <回复内容>".yellow());
+                            }
+                        }
                         _ => {
                             self.send_message(&input).await;
                         }
@@ -284,6 +295,7 @@ impl ChatroomCommand {
         let redpacket_cache = Arc::clone(&self.redpacket_handler.redpacket_cache);
         let filter_handler = Arc::new(self.filter_handler.clone());
         let filter_handler_arc = filter_handler.clone();
+        let mesage_cache = Arc::clone(&self.message_cache);
 
         let result = self
             .context
@@ -295,10 +307,15 @@ impl ChatroomCommand {
                 let client = Arc::clone(&client);
                 let redpacket_cache = Arc::clone(&redpacket_cache);
                 let filter_handler = filter_handler_arc.clone();
+                let mesage_cache = Arc::clone(&mesage_cache);
 
                 tokio::spawn(async move {
                     match data.data {
                         ChatRoomDataContent::Message(msg) => {
+                            {
+                                let mut cache = mesage_cache.lock().unwrap();
+                                cache.put(msg.oid.clone(), *msg.clone());
+                            }
                             let should_block = {
                                 let cfg = filter_handler.config.lock().unwrap();
                                 cfg.should_block(&msg.user_name, msg.md_text())
@@ -685,19 +702,18 @@ impl ChatroomCommand {
     }
 
     async fn show_raw_message(&self, oid: &str) {
-        let result = self.context.client.chatroom.get_raw_message(oid).await;
-
-        if result.success {
-            if let Some(raw_content) = result.data {
+        match self.context.client.chatroom.get_raw_message(oid).await {
+            Ok(raw_content) => {
                 println!("消息原文:");
                 println!("{}", raw_content.cyan());
             }
-        } else {
-            println!(
-                "{}: {}",
-                "获取消息原文失败".red(),
-                result.message.unwrap_or("未知错误".to_string())
-            );
+            Err(e) => {
+                println!(
+                    "{}: {}",
+                    "获取消息原文失败".red(),
+                    e.to_string()
+                );
+            }
         }
     }
 

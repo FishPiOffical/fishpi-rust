@@ -484,11 +484,8 @@ impl ChatroomService {
     }
 
     /// 获取消息原文
-    pub async fn get_raw_message(&self, oid: &str) -> Response<String> {
-        self.call_api(&format!("获取消息原文: id={}", oid), || async {
-            self.chatroom_api.get_raw_message(oid).await
-        })
-        .await
+    pub async fn get_raw_message(&self, oid: &str) -> Result<String, anyhow::Error> {
+        self.chatroom_api.get_raw_message(oid).await
     }
 
     /// 获取在线用户列表
