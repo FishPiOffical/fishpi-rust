@@ -51,24 +51,25 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           New-Item -ItemType Directory -Path "release" -Force
-          Copy-Item "target\${{ matrix.target }}\release\client.exe" "release\"
-          Copy-Item "README.md" "release\"
-          Compress-Archive -Path "release\*" -DestinationPath "${{ matrix.archive-name }}"
+          Copy-Item "target\${{ matrix.target }}\release\client.exe" "release\client-windows.exe"
 
-      - name: Package Unix
-        if: matrix.os != 'windows-latest'
+      - name: Package Linux
+        if: matrix.os == 'ubuntu-latest'
         run: |
           mkdir -p release
-          cp target/${{ matrix.target }}/release/client release/
-          cp README.md release/
-          cd release
-          tar -czf ../${{ matrix.archive-name }} *
+          cp target/${{ matrix.target }}/release/client release/client-linux
+
+      - name: Package macOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/client release/client-macos
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.archive-name }}
-          path: ${{ matrix.archive-name }}
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ matrix.target }}
+            path: release/*
 
   create-release:
     needs: build
@@ -131,20 +132,22 @@ jobs:
           tag_name: ${{ steps.version.outputs.VERSION }}
           name: FishPi Client ${{ steps.version.outputs.VERSION }}
           body: |
-            ## FishPi 聊天室客户端 ${{ steps.version.outputs.VERSION }}
+            ## FishPi 聊天室Rust命令行客户端 ${{ steps.version.outputs.VERSION }}
             
             ### 更新内容
             ${{ steps.changelog.outputs.CHANGELOG }}
             
             ### 下载
-            - **Windows**: `fishpi-client-windows-x64.zip`
-            - **Linux**: `fishpi-client-linux-x64.tar.gz`
-            - **macOS**: `fishpi-client-macos-x64.tar.gz`
+            - **Windows**: `client-windows.exe`
+            - **Linux**: `client-linux`
+            - **macOS**: `client-macos`
             
             ### 使用方法
             1. 下载对应平台的文件
-            2. 解压缩
-            3. 运行 `client` 程序
-          files: artifacts/*/*
+            2. 运行 `client` 程序
+          files: |
+            artifacts/*/client-windows.exe
+            artifacts/*/client-linux
+            artifacts/*/client-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
