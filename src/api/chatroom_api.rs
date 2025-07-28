@@ -248,7 +248,9 @@ impl ChatroomApi {
             .await?;
 
         if let Some(data) = response.get("data").and_then(|v| v.as_str()) {
-            return Ok(BarrageCost { value: data.trim().to_string() });
+            return Ok(BarrageCost {
+                value: data.trim().to_string(),
+            });
         }
 
         Ok(BarrageCost::default())
@@ -258,7 +260,6 @@ impl ChatroomApi {
     ///
     /// 返回禁言成员列表
     pub async fn get_mutes(&self) -> Result<Vec<MuteItem>> {
-
         let response = self
             .client
             .get::<serde_json::Value>("/chat-room/si-guo-list", None)

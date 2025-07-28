@@ -1,7 +1,6 @@
 use crate::models::article::ArticleComment;
 use serde_json::Value;
 
-
 /// 从评论数据中解析普通评论和精选评论
 pub fn parse_comment_data(comments_data: &Value) -> (Vec<ArticleComment>, Vec<ArticleComment>) {
     let mut comments = Vec::new();

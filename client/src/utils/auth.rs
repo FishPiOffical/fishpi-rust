@@ -133,10 +133,7 @@ impl AuthService {
     pub async fn logout(&self) -> Result<()> {
         self.client.set_token(None).await;
 
-        match std::fs::remove_file("token.txt") {
-            Ok(_) => {}
-            Err(_) => {}
-        }
+        let _ = std::fs::remove_file("token.txt").is_ok();
 
         Ok(())
     }

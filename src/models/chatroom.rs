@@ -838,15 +838,9 @@ impl WeatherMsg {
         let mut result = Vec::with_capacity(min_len);
         for i in 0..min_len {
             // 安全地解析温度值
-            let min_temp = match min_temps[i].trim().parse::<f64>() {
-                Ok(value) => value,
-                Err(_) => 0.0,
-            };
+            let min_temp = min_temps[i].trim().parse::<f64>().unwrap_or(0.0);
 
-            let max_temp = match max_temps[i].trim().parse::<f64>() {
-                Ok(value) => value,
-                Err(_) => 0.0,
-            };
+            let max_temp = max_temps[i].trim().parse::<f64>().unwrap_or(0.0);
 
             result.push(WeatherMsgData {
                 date: dates[i].trim().to_string(),
@@ -925,10 +919,10 @@ impl fmt::Display for WeatherMsg {
         if weather_data.is_empty() {
             write!(f, "（数据为空）")?;
         } else {
-            write!(f, "\n")?;
+            writeln!(f)?;
             for (i, day) in weather_data.iter().enumerate() {
                 if i > 0 {
-                    write!(f, "\n")?;
+                    writeln!(f)?;
                 }
                 write!(f, "  Day {}: {}", i + 1, day)?;
             }

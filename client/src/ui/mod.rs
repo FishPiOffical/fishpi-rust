@@ -129,7 +129,7 @@ impl CrosstermInputHandler {
 
         Self { editor }
     }
-    
+
     pub fn with_completer(completer: CommandCompleter) -> Self {
         let config = Config::builder()
             .completion_show_all_if_ambiguous(true)
@@ -146,7 +146,6 @@ impl CrosstermInputHandler {
             helper.set_commands(commands);
         }
     }
-
 
     pub async fn start_input_loop(&mut self, prompt: &str) -> io::Result<Option<String>> {
         match self.editor.readline(prompt) {

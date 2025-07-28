@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex};
 pub struct RedpacketCommand {
     context: CommandContext,
     pub redpacket_cache: Arc<Mutex<HashMap<String, RedPacketMessage>>>,
-
 }
 
 impl RedpacketCommand {
@@ -24,7 +23,7 @@ impl RedpacketCommand {
     pub async fn handle_redpacket_command(&self, input: &str) -> Result<bool> {
         let parts: Vec<&str> = input.split_whitespace().collect();
 
-        match parts.get(0) {
+        match parts.first() {
             Some(&":rp") | Some(&":redpacket") => {
                 if parts.len() < 2 {
                     self.help().green();
@@ -137,7 +136,10 @@ impl RedpacketCommand {
         if let Some(info) = &result.data {
             if info.info.count == info.info.got {
                 println!("{}", "红包已领完".yellow());
-                println!("{}", "红包详情:\n===============================".red().bold());
+                println!(
+                    "{}",
+                    "红包详情:\n===============================".red().bold()
+                );
                 for i in info.who.iter() {
                     println!(
                         "[{}]{}: {} 积分",
@@ -401,7 +403,7 @@ impl RedpacketCommand {
                             .red()
                     );
                 }
-                return Ok(());
+                Ok(())
             }
             1 => {
                 // 只给了一个参数，手势随机
@@ -426,7 +428,7 @@ impl RedpacketCommand {
                             .red()
                     );
                 }
-                return Ok(());
+                Ok(())
             }
             2 => {
                 // 两个参数，手势随机，第二个参数msg
@@ -460,7 +462,7 @@ impl RedpacketCommand {
                             .red()
                     );
                 }
-                return Ok(());
+                Ok(())
             }
             _ => {
                 let money: i32 = args[0].parse().unwrap_or(default_money);
@@ -497,7 +499,7 @@ impl RedpacketCommand {
                             .red()
                     );
                 }
-                return Ok(());
+                Ok(())
             }
         }
     }
@@ -541,53 +543,60 @@ impl RedpacketCommand {
         };
         for (id, msg) in oids {
             if msg.type_ == RedPacketType::ROCK_PAPER_SCISSORS {
-            // 随机生成一个手势
-            let gesture = match rand::random_range(0..=2) {
-                0 => GestureType::Rock,
-                1 => GestureType::Scissors,
-                _ => GestureType::Paper,
-            };
-            let result = self.context.client.redpacket.open_with_gesture(&id, gesture).await;
-            if !result.success {
-                println!(
-                    "{}",
-                    result.message.unwrap_or("打开猜拳红包失败".to_string()).red()
-                );
-            }
-        } else {
-            let result = self.context.client.redpacket.open(&id).await;
-            if !result.success {
-                println!(
-                    "{}",
-                    result.message.unwrap_or("打开红包失败".to_string()).red()
-                );
-            }
-            if let Some(info) = &result.data {
-                let user_name = self.context.auth.get_user_name().await?;
-                if let Some(got) = info.who.iter().find(|got| got.user_name == user_name) {
+                // 随机生成一个手势
+                let gesture = match rand::random_range(0..=2) {
+                    0 => GestureType::Rock,
+                    1 => GestureType::Scissors,
+                    _ => GestureType::Paper,
+                };
+                let result = self
+                    .context
+                    .client
+                    .redpacket
+                    .open_with_gesture(&id, gesture)
+                    .await;
+                if !result.success {
                     println!(
-                        "你领取了 {} 积分 {} / {}",
-                        got.money.to_string().yellow().bold(),
-                        info.info.got.to_string().cyan(),
-                        info.info.count.to_string().cyan()
+                        "{}",
+                        result
+                            .message
+                            .unwrap_or("打开猜拳红包失败".to_string())
+                            .red()
                     );
-                } else {
-                    println!("{}", "红包已领完".yellow());
+                }
+            } else {
+                let result = self.context.client.redpacket.open(&id).await;
+                if !result.success {
+                    println!(
+                        "{}",
+                        result.message.unwrap_or("打开红包失败".to_string()).red()
+                    );
+                }
+                if let Some(info) = &result.data {
+                    let user_name = self.context.auth.get_user_name().await?;
+                    if let Some(got) = info.who.iter().find(|got| got.user_name == user_name) {
+                        println!(
+                            "你领取了 {} 积分 {} / {}",
+                            got.money.to_string().yellow().bold(),
+                            info.info.got.to_string().cyan(),
+                            info.info.count.to_string().cyan()
+                        );
+                    } else {
+                        println!("{}", "红包已领完".yellow());
+                    }
                 }
             }
         }
-    }
 
         Ok(())
     }
-
 }
 
 #[async_trait]
 impl Command for RedpacketCommand {
     async fn execute(&mut self, args: &[&str]) -> Result<CommandResult> {
         if args.is_empty() {
-            println!("{}",self.help().green());
+            println!("{}", self.help().green());
         } else {
             let input = format!(":rp {}", args.join(" "));
             self.handle_redpacket_command(&input).await?;
@@ -596,7 +605,7 @@ impl Command for RedpacketCommand {
     }
 
     fn help(&self) -> &'static str {
-    r#"
+        r#"
     红包命令帮助:
         :rp open|o <红包ID>                        - 打开普通红包
         :rp open_gesture|og <红包ID> [手势]        - 打开猜拳红包（可指定手势，手势可选：石头/剪刀/布 或 rock/scissors/paper）

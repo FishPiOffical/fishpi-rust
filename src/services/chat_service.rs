@@ -159,7 +159,7 @@ impl ChatService {
         self.call_json_api(
             "获取未读私聊消息",
             || self.chat_api.has_unread(),
-            |data| ChatData::from_json(data),
+            ChatData::from_json,
         )
         .await
     }
@@ -345,7 +345,7 @@ impl ChatService {
     ) {
         tokio::spawn(async move {
             while let Some(message) = receiver.next().await {
-                if let Err(_) = write.send(message).await {
+                if write.send(message).await.is_err() {
                     break;
                 }
             }

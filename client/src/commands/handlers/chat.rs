@@ -8,7 +8,7 @@ use crossterm::{
 use std::borrow::Cow;
 
 use crate::commands::{Command, CommandContext, CommandResult};
-use crate::ui::{CrosstermInputHandler, CommandItem};
+use crate::ui::{CommandItem, CrosstermInputHandler};
 use fishpi_rust::ChatDataContent;
 
 pub struct ChatCommand {
@@ -133,7 +133,6 @@ impl ChatCommand {
                         ":help" => {
                             println!("{}", self.help().green());
                             self.context.show_switch_help();
-
                         }
                         cmd if cmd.starts_with(":history") | cmd.starts_with(":h") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();

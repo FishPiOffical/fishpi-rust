@@ -1,6 +1,12 @@
 use crate::{
-    commands::{Command, CommandContext, CommandResult, handlers::{RedpacketCommand, FilterCommand}},
-    ui::{CommandItem,CrosstermInputHandler, CommandCompleter}, utils::{is_quote_message,format_quote_message,filter_tail_content, strip_html_tags_chatroom}
+    commands::{
+        Command, CommandContext, CommandResult,
+        handlers::{FilterCommand, RedpacketCommand},
+    },
+    ui::{CommandCompleter, CommandItem, CrosstermInputHandler},
+    utils::{
+        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom,
+    },
 };
 use anyhow::Result;
 use async_trait::async_trait;
@@ -11,7 +17,7 @@ use crossterm::{
     cursor, execute,
     terminal::{Clear, ClearType},
 };
-use fishpi_rust::{ChatRoomDataContent, RedPacketType, ChatRoomUser, GestureType};
+use fishpi_rust::{ChatRoomDataContent, ChatRoomUser, GestureType, RedPacketType};
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -20,7 +26,7 @@ pub struct ChatroomCommand {
     context: CommandContext,
     online_users: Arc<Mutex<Vec<ChatRoomUser>>>,
     redpacket_handler: RedpacketCommand,
-    filter_handler: FilterCommand
+    filter_handler: FilterCommand,
 }
 
 impl ChatroomCommand {
@@ -29,7 +35,7 @@ impl ChatroomCommand {
             context: context.clone(),
             online_users: Arc::new(Mutex::new(vec![])),
             redpacket_handler: RedpacketCommand::new(context),
-            filter_handler: FilterCommand::new()
+            filter_handler: FilterCommand::new(),
         }
     }
 }
@@ -70,8 +76,8 @@ impl Command for ChatroomCommand {
             :rp            - 红包
             :bl            - 消息屏蔽/过滤
         "#
-        }
     }
+}
 
 impl ChatroomCommand {
     async fn chatroom_loop(&self) -> Result<()> {
@@ -172,7 +178,6 @@ impl ChatroomCommand {
                         ":help" | ":h" => {
                             println!("{}", self.help().green());
                             self.context.show_switch_help();
-
                         }
                         cmd if cmd.starts_with(":history") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
@@ -254,7 +259,7 @@ impl ChatroomCommand {
                             }
                         }
                         cmd if cmd.starts_with(":bl") => {
-                            let args: Vec<&str> = cmd.trim().split_whitespace().skip(1).collect();
+                            let args: Vec<&str> = cmd.split_whitespace().skip(1).collect();
                             self.filter_handler.handle_filter_cmd(&args);
                         }
                         _ => {
@@ -271,7 +276,6 @@ impl ChatroomCommand {
 
         Ok(())
     }
-
 
     async fn register_message_handler(&self) -> Result<()> {
         let online_users = Arc::clone(&self.online_users);
@@ -297,7 +301,7 @@ impl ChatroomCommand {
                         ChatRoomDataContent::Message(msg) => {
                             let should_block = {
                                 let cfg = filter_handler.config.lock().unwrap();
-                                cfg.should_block(&msg.user_name, &msg.md_text())
+                                cfg.should_block(&msg.user_name, msg.md_text())
                             };
                             if should_block && !msg.is_redpacket() {
                                 filter_handler.push_blocked_msg((*msg).clone());
@@ -309,12 +313,19 @@ impl ChatroomCommand {
                                 if redpacket.type_ == "specify" {
                                     // 只有专属红包才需要显示接收人
                                     if redpacket.receivers.contains(&user_name) {
-                                        redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
+                                        redpacket_cache
+                                            .lock()
+                                            .unwrap()
+                                            .insert(msg.oid.clone(), redpacket.clone());
                                     }
                                     let receivers = if !redpacket.receivers.is_empty() {
-                                        match serde_json::from_str::<Vec<String>>(&redpacket.receivers) {
+                                        match serde_json::from_str::<Vec<String>>(
+                                            &redpacket.receivers,
+                                        ) {
                                             Ok(list) => format!(" to {}", list.join(", ").green()),
-                                            Err(_) => format!(" to {}", redpacket.receivers.green()),
+                                            Err(_) => {
+                                                format!(" to {}", redpacket.receivers.green())
+                                            }
                                         }
                                     } else {
                                         "".to_string()
@@ -330,7 +341,10 @@ impl ChatroomCommand {
                                         redpacket.money.to_string().yellow(),
                                     );
                                 } else {
-                                    redpacket_cache.lock().unwrap().insert(msg.oid.clone(), redpacket.clone());
+                                    redpacket_cache
+                                        .lock()
+                                        .unwrap()
+                                        .insert(msg.oid.clone(), redpacket.clone());
                                     println!(
                                         "\r[{}] {} 发送了 [{}: {}] 红包详情: {} 个, {} 积分",
                                         msg.oid.bright_black(),
@@ -364,8 +378,8 @@ impl ChatroomCommand {
                                 );
                             } else {
                                 let content = msg.md_text();
-                                if is_quote_message(&content) {
-                                    let formatted_content = format_quote_message(&content);
+                                if is_quote_message(content) {
+                                    let formatted_content = format_quote_message(content);
                                     println!(
                                         "\r{} {} [{}]: {}",
                                         msg.time.blue().bold(),
@@ -374,7 +388,7 @@ impl ChatroomCommand {
                                         filter_tail_content(&formatted_content)
                                     );
                                 } else {
-                                    let filtered_content = filter_tail_content(&content);
+                                    let filtered_content = filter_tail_content(content);
                                     println!(
                                         "\r{} {} [{}]: {}",
                                         msg.time.blue().bold(),
@@ -444,7 +458,11 @@ impl ChatroomCommand {
                                     if result.success {
                                         if let Some(info) = result.data {
                                             if let Some(gesture) = info.info.gesture {
-                                                if let Some(who) = info.who.iter().find(|w| w.user_name == status.who_got) {
+                                                if let Some(who) = info
+                                                    .who
+                                                    .iter()
+                                                    .find(|w| w.user_name == status.who_got)
+                                                {
                                                     Self::rps_result(gesture, who.money, is_sender);
                                                 }
                                             }
@@ -534,7 +552,7 @@ impl ChatroomCommand {
                                 msg.time.blue().bold(),
                                 msg.all_name().green().bold(),
                                 msg.oid.bright_black(),
-                                strip_html_tags_chatroom(&msg.content_text())
+                                strip_html_tags_chatroom(msg.content_text())
                             );
                         }
                     }
@@ -547,7 +565,7 @@ impl ChatroomCommand {
                 result.message.unwrap_or("未知错误".to_string())
             );
         }
-        println!("{}","=".repeat(50).yellow());
+        println!("{}", "=".repeat(50).yellow());
     }
 
     async fn show_online_users(&self) {
@@ -555,8 +573,7 @@ impl ChatroomCommand {
 
         if result.success {
             if let Some(mut users) = result.data {
-                users.sort_by(|a, b| a.all_name().cmp(&b.all_name()));
-                println!("在线用户 ({}人):", users.len());
+                users.sort_by_key(|a| a.all_name());
                 for (i, user) in users.iter().enumerate() {
                     println!("  {}. {}", i + 1, user.all_name().green());
                 }
@@ -689,10 +706,7 @@ impl ChatroomCommand {
 
         if result.success {
             if let Some(cost) = result.data {
-                println!(
-                    "弹幕发送花费 {}",
-                    cost.value.yellow()
-                );
+                println!("弹幕发送花费 {}", cost.value.yellow());
             } else {
                 println!("{}", "获取弹幕价格失败: 数据为空".red());
             }
@@ -738,10 +752,7 @@ impl ChatroomCommand {
                     gesture_name.yellow(),
                     m.to_string().cyan().bold()
                 ),
-                _ => println!(
-                    "  🤝 你出 {} 平局!",
-                    gesture_name.yellow()
-                ),
+                _ => println!("  🤝 你出 {} 平局!", gesture_name.yellow()),
             }
         } else {
             match money {
@@ -755,10 +766,7 @@ impl ChatroomCommand {
                     gesture_name.yellow(),
                     m.abs().to_string().cyan().bold()
                 ),
-                _ => println!(
-                    "  🤝 你出 {} 平局!",
-                    gesture_name.yellow()
-                ),
+                _ => println!("  🤝 你出 {} 平局!", gesture_name.yellow()),
             }
         }
     }

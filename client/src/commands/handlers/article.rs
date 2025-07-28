@@ -1,11 +1,11 @@
+use crate::commands::{Command, CommandContext, CommandResult};
+use crate::ui::CrosstermInputHandler;
+use crate::utils::strip_html_tags;
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::*;
 use fishpi_rust::CommentPost;
-use crate::commands::{Command, CommandContext, CommandResult};
-use crate::ui::CrosstermInputHandler;
 use html2text::from_read;
-use crate::utils::strip_html_tags;
 pub struct ArticleCommand {
     context: CommandContext,
 }
@@ -53,9 +53,15 @@ impl ArticleCommand {
                     article.title.bright_white(),
                 );
             }
-            println!("{}", "输入 r <序号> 阅读, n 下一页, p 上一页, q 退出".cyan());
+            println!(
+                "{}",
+                "输入 r <序号> 阅读, n 下一页, p 上一页, q 退出".cyan()
+            );
 
-            if let Some(input) = input_handler.start_input_loop(&format!("{}", "看帖> ".green().bold())).await? {
+            if let Some(input) = input_handler
+                .start_input_loop(&format!("{}", "看帖> ".green().bold()))
+                .await?
+            {
                 let input = input.trim();
 
                 if let Some(target_mode) = self.context.is_switch_command(input) {
@@ -71,7 +77,9 @@ impl ArticleCommand {
                     page += 1;
                     continue;
                 } else if input == "p" {
-                    if page > 1 { page -= 1; }
+                    if page > 1 {
+                        page -= 1;
+                    }
                     continue;
                 } else if input.starts_with("r ") {
                     let parts: Vec<&str> = input.split_whitespace().collect();
@@ -101,27 +109,29 @@ impl ArticleCommand {
         let article_service = &self.context.client.article;
         let mut comment_page = 1;
         let mut input_handler = CrosstermInputHandler::new();
-            let detail = article_service.detail(article_id, comment_page).await?;
-            println!("\n{}", "=".repeat(60).cyan());
-            println!("{}", detail.title.bright_white().bold());
-            println!(
-                "作者: {} | 时间: {} | 浏览: {} | 评论: {}",
-                detail.author_name.green(),
-                detail.create_time_str.blue(),
-                detail.view_cnt.to_string().yellow(),
-                detail.comment_cnt.to_string().yellow()
-            );
-            println!("{}", "=".repeat(60).cyan());
-            // 正文去除HTML
-            let plain_content = from_read(detail.content.as_bytes(), 80);
-            match plain_content {
-                Ok(ref text) => println!("{}", text.trim()),
-                Err(e) => println!("帖子解析失败: {}", e),
-            }
-            println!("{}", "=".repeat(60).cyan());
+        let detail = article_service.detail(article_id, comment_page).await?;
+        println!("\n{}", "=".repeat(60).cyan());
+        println!("{}", detail.title.bright_white().bold());
+        println!(
+            "作者: {} | 时间: {} | 浏览: {} | 评论: {}",
+            detail.author_name.green(),
+            detail.create_time_str.blue(),
+            detail.view_cnt.to_string().yellow(),
+            detail.comment_cnt.to_string().yellow()
+        );
+        println!("{}", "=".repeat(60).cyan());
+        // 正文去除HTML
+        let plain_content = from_read(detail.content.as_bytes(), 80);
+        match plain_content {
+            Ok(ref text) => println!("{}", text.trim()),
+            Err(e) => println!("帖子解析失败: {}", e),
+        }
+        println!("{}", "=".repeat(60).cyan());
 
         loop {
-            let (normal_comments, nice_comments) = article_service.get_comments(article_id, comment_page).await?;
+            let (normal_comments, nice_comments) = article_service
+                .get_comments(article_id, comment_page)
+                .await?;
             if normal_comments.is_empty() && nice_comments.is_empty() {
                 println!("{}", "暂无评论".yellow());
             }
@@ -138,7 +148,7 @@ impl ArticleCommand {
                     );
                 }
             }
-            
+
             let mut id_to_author = std::collections::HashMap::new();
             for comment in &normal_comments {
                 id_to_author.insert(comment.o_id.clone(), comment.all_name());
@@ -146,30 +156,34 @@ impl ArticleCommand {
 
             if !normal_comments.is_empty() {
                 for (i, comments) in normal_comments.iter().enumerate() {
-                let reply_info = if !comments.reply_id.is_empty() {
-                    if let Some(reply_author) = id_to_author.get(&comments.reply_id) {
-                        format!(" 回复 @{} ", reply_author.green())
+                    let reply_info = if !comments.reply_id.is_empty() {
+                        if let Some(reply_author) = id_to_author.get(&comments.reply_id) {
+                            format!(" 回复 @{} ", reply_author.green())
                         } else {
                             "回复 ".to_string()
                         }
                     } else {
                         String::new()
                     };
-                println!("({})  [👍:{} 🙏:{}] {}. {}{}: {}",
-                    comments.time_ago.blue(),
-                    comments.good_cnt.to_string().yellow(),
-                    comments.thank_cnt.to_string().yellow(),
-                    (i + 1).to_string().yellow(),
-                    comments.all_name().green(),
-                    reply_info,
-                    strip_html_tags(&comments.content),
-                );
+                    println!(
+                        "({})  [👍:{} 🙏:{}] {}. {}{}: {}",
+                        comments.time_ago.blue(),
+                        comments.good_cnt.to_string().yellow(),
+                        comments.thank_cnt.to_string().yellow(),
+                        (i + 1).to_string().yellow(),
+                        comments.all_name().green(),
+                        reply_info,
+                        strip_html_tags(&comments.content),
+                    );
+                }
             }
-            }
-            
+
             println!("{}", "命令: n 下一页评论, p 上一页评论, v 点赞, t 打赏, th 感谢, c 评论, tc <序号> 感谢评论, q 返回列表".cyan());
 
-            if let Some(input) = input_handler.start_input_loop(&format!("{}", "帖子> ".green().bold())).await? {
+            if let Some(input) = input_handler
+                .start_input_loop(&format!("{}", "帖子> ".green().bold()))
+                .await?
+            {
                 let input = input.trim();
                 match input {
                     "q" => break,
@@ -206,11 +220,9 @@ impl ArticleCommand {
                         // 发表评论
                         let comment = if cmd.len() > 1 {
                             cmd[1..].trim().to_string()
-                        } else {
-                            if let Some(c) = input_handler.start_input_loop("评论内容> ").await? {
+                        } else if let Some(c) = input_handler.start_input_loop("评论内容> ").await? {
                                 c.trim().to_string()
-                            } else { String::new() }
-                        };
+                        } else { String::new() };
                         if !comment.is_empty() {
                             let comment_post = CommentPost {
                                 article_id: article_id.to_string(),

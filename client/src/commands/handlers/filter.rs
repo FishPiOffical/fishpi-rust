@@ -1,14 +1,16 @@
+use crate::commands::{Command, CommandResult};
+use crate::utils::{
+    filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom,
+};
 use anyhow::Result;
 use async_trait::async_trait;
+use colored::*;
+use fishpi_rust::ChatRoomMessage;
+use lru::LruCache;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::sync::{Arc, Mutex};
-use colored::*;
-use lru::LruCache;
 use std::num::NonZeroUsize;
-use fishpi_rust::ChatRoomMessage;
-use crate::commands::{Command, CommandResult};
-use crate::utils::{is_quote_message, filter_tail_content, format_quote_message, strip_html_tags_chatroom};
+use std::sync::{Arc, Mutex};
 
 const FILTER_CONFIG_FILE: &str = "filters.json";
 
@@ -89,14 +91,16 @@ impl FilterConfig {
 pub struct FilterCommand {
     pub config: Arc<Mutex<FilterConfig>>,
     pub blocked_msgs: Arc<Mutex<LruCache<String, ChatRoomMessage>>>,
-
 }
 
 impl FilterCommand {
     pub fn new() -> Self {
         let config = Arc::new(Mutex::new(FilterConfig::load()));
         let blocked_msgs = Arc::new(Mutex::new(LruCache::new(NonZeroUsize::new(200).unwrap())));
-        Self { config, blocked_msgs }
+        Self {
+            config,
+            blocked_msgs,
+        }
     }
 
     pub fn handle_filter_cmd(&self, args: &[&str]) {
@@ -167,32 +171,30 @@ impl FilterCommand {
         println!("{}", "最近被屏蔽的消息：".cyan());
         for (i, msg) in cache.iter().rev().enumerate() {
             let content = msg.1.md_text();
-            if is_quote_message(&content) {
-                let formatted_content = format_quote_message(&content);
+            if is_quote_message(content) {
+                let formatted_content = format_quote_message(content);
                 println!(
                     "\r{}. {} {}[{}]: {}",
-                    (i+1).to_string().bright_black().bold(),
+                    (i + 1).to_string().bright_black().bold(),
                     msg.1.time.blue().bold(),
                     msg.1.all_name().green().bold(),
                     msg.1.oid.bright_black(),
                     filter_tail_content(&formatted_content)
                 );
-                println!("{}","=".repeat(80).bright_black());
+                println!("{}", "=".repeat(80).bright_black());
             } else {
-                let filtered_content = filter_tail_content(&content);
+                let filtered_content = filter_tail_content(content);
                 println!(
                     "\r{}. {} {}[{}]: {}",
-                    (i+1).to_string().bright_black().bold(),
+                    (i + 1).to_string().bright_black().bold(),
                     msg.1.time.blue().bold(),
                     msg.1.all_name().green().bold(),
                     msg.1.oid.bright_black(),
                     strip_html_tags_chatroom(&filtered_content)
                 );
-                println!("{}","=".repeat(80).bright_black());
-
+                println!("{}", "=".repeat(80).bright_black());
             }
         }
-
     }
 }
 

@@ -1,9 +1,9 @@
+use crate::models::user::Metal;
+use serde::de::Deserializer;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
-use serde::de::Deserializer;
-use crate::models::user::Metal;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::collections::HashMap;
 
 /// 帖子发布信息
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -179,7 +179,6 @@ pub enum VoteStatus {
     /// 点踩
     Down = 2,
 }
-
 
 /// 帖子状态
 #[derive(Serialize_repr, Deserialize_repr, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -451,7 +450,6 @@ pub struct ArticleAuthor {
     // /// 徽章
     // #[serde(rename = "sysMetal", default)]
     // pub sys_metal: Vec<Metal>,
-
     /// mbti
     #[serde(rename = "mbti", default)]
     pub mbti: String,
@@ -484,7 +482,6 @@ pub struct ArticleComment {
     // /// 是否优评
     // #[serde(rename = "commentNice", default)]
     // pub is_nice: bool,
-
     /// 评论创建时间字符串
     #[serde(rename = "commentCreateTimeStr")]
     pub create_time_str: String,
@@ -623,13 +620,14 @@ where
 {
     let value = serde_json::Value::deserialize(deserializer)?;
     match value {
-        serde_json::Value::Number(n) => n.as_f64().ok_or_else(|| serde::de::Error::custom("Invalid number")),
+        serde_json::Value::Number(n) => n
+            .as_f64()
+            .ok_or_else(|| serde::de::Error::custom("Invalid number")),
         serde_json::Value::String(s) => s.parse::<f64>().map_err(serde::de::Error::custom),
         serde_json::Value::Null => Ok(0.0),
         _ => Ok(0.0),
     }
 }
-
 
 fn deserialize_article_status<'de, D>(deserializer: D) -> Result<ArticleStatus, D::Error>
 where
@@ -681,7 +679,9 @@ where
 {
     let value = serde_json::Value::deserialize(deserializer)?;
     match value {
-        serde_json::Value::Object(_) => serde_json::from_value(value).map_err(serde::de::Error::custom),
+        serde_json::Value::Object(_) => {
+            serde_json::from_value(value).map_err(serde::de::Error::custom)
+        }
         serde_json::Value::Null | serde_json::Value::Number(_) => Ok(ArticleAuthor::default()),
         _ => Ok(ArticleAuthor::default()),
     }
@@ -960,7 +960,6 @@ pub struct ArticleDetail {
     // #[serde(rename = "articleViewCntDisplayFormat", default)]
     // // #[serde(deserialize_with = "deserialize_string_or_default")]
     // pub view_cnt_format: String,
-
     /// 是否已打赏
     #[serde(rename = "rewarded", default)]
     #[serde(deserialize_with = "deserialize_bool_or_int")]
@@ -1064,7 +1063,6 @@ pub struct ArticleDetail {
     // #[serde(rename = "redditScore", default)]
     // // #[serde(deserialize_with = "deserialize_string_or_default")]
     // pub reddit_score: String,
-
     /// 评论分页信息
     #[serde(default)]
     pub pagination: Option<Pagination>,
@@ -1081,7 +1079,6 @@ pub struct ArticleDetail {
     /// 帖子评论
     #[serde(rename = "articleComments", default)]
     pub comments: Vec<ArticleComment>,
-
     // /// 帖子最佳评论
     // #[serde(rename = "articleNiceComments", default)]
     // pub nice_comments: Vec<ArticleComment>,
@@ -1101,8 +1098,7 @@ impl ArticleDetail {
                 println!("反序列化失败路径: {}", path_str);
                 Err(serde::de::Error::custom(format!(
                     "路径: {}, 错误: {}",
-                    path_str,
-                    e
+                    path_str, e
                 )))
             }
         }
