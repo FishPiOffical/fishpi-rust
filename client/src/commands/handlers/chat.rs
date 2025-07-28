@@ -8,7 +8,7 @@ use crossterm::{
 use std::borrow::Cow;
 
 use crate::commands::{Command, CommandContext, CommandResult};
-use crate::ui::CrosstermInputHandler;
+use crate::ui::{CrosstermInputHandler, CommandItem};
 use fishpi_rust::ChatDataContent;
 
 pub struct ChatCommand {
@@ -46,7 +46,7 @@ impl Command for ChatCommand {
         r#"
         私聊命令:
             :h [页码]      - 历史消息
-            :r             - 刷新消息
+            :refresh       - 刷新消息
             :read          - 标记已读
             :rm <ID>   - 撤回消息
             :cls           - 清屏
@@ -58,6 +58,36 @@ impl Command for ChatCommand {
 impl ChatCommand {
     async fn chat_loop(&self, username: &str) -> Result<()> {
         let mut input_handler = CrosstermInputHandler::new();
+        input_handler.set_commands(vec![
+            CommandItem {
+                name: ":q",
+                desc: "退出",
+            },
+            CommandItem {
+                name: ":help",
+                desc: "帮助",
+            },
+            CommandItem {
+                name: ":cls",
+                desc: "清屏",
+            },
+            CommandItem {
+                name: ":history",
+                desc: "查看历史消息",
+            },
+            CommandItem {
+                name: ":read",
+                desc: "标记已读",
+            },
+            CommandItem {
+                name: ":refresh",
+                desc: "刷新消息",
+            },
+            CommandItem {
+                name: ":rm",
+                desc: "撤回消息",
+            },
+        ]);
 
         println!(
             "{}",
@@ -100,12 +130,12 @@ impl ChatCommand {
                             )?;
                             continue;
                         }
-                        ":help" | ":h" => {
+                        ":help" => {
                             println!("{}", self.help().green());
                             self.context.show_switch_help();
 
                         }
-                        cmd if cmd.starts_with(":history") => {
+                        cmd if cmd.starts_with(":history") | cmd.starts_with(":h") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
                             let page = if parts.len() > 1 {
                                 parts[1].parse().unwrap_or(1)
@@ -114,7 +144,7 @@ impl ChatCommand {
                             };
                             self.show_history(username, page).await;
                         }
-                        ":refresh" | ":r" => {
+                        ":refresh" => {
                             self.refresh_messages(username).await;
                         }
                         ":read" => {
@@ -178,9 +208,10 @@ impl ChatCommand {
                     println!("与 {} 的最近聊天记录:", username.green());
                     for msg in messages.iter().rev() {
                         println!(
-                            "  {} {}: {}",
+                            "  {} {} [{}]: {}",
                             msg.time.blue(),
                             msg.sender_user_name.green().bold(),
+                            msg.oid.bright_black(),
                             msg.content.cyan()
                         );
                     }
@@ -272,6 +303,18 @@ impl ChatCommand {
                     println!("{}", "请输入用户名或编号:".cyan());
                     let mut input_handler = CrosstermInputHandler::new();
                     if let Some(input) = input_handler.start_input_loop("选择> ").await? {
+                        if input.starts_with(':') {
+                            match input.as_str() {
+                                ":q" | ":exit" | ":quit" => {
+                                    println!("{}", "已退出联系人选择".yellow());
+                                    return Ok(());
+                                }
+                                _ => {
+                                    println!("{}", "未知命令".red());
+                                    return Ok(());
+                                }
+                            }
+                        }
                         let username = if let Ok(index) = input.trim().parse::<usize>() {
                             if index > 0 && index <= contacts.len() {
                                 &contacts[index - 1].receiver_user_name
@@ -332,9 +375,10 @@ impl ChatCommand {
                     println!("与 {} 的聊天记录:", username.green());
                     for msg in messages.iter().rev() {
                         println!(
-                            "{} {}: {}",
+                            "{} {} [{}]: {}",
                             msg.time.blue(),
                             msg.sender_user_name.green().bold(),
+                            msg.oid.bright_black(),
                             msg.content.cyan()
                         );
                     }

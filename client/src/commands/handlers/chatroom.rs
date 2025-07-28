@@ -299,7 +299,7 @@ impl ChatroomCommand {
                                 let cfg = filter_handler.config.lock().unwrap();
                                 cfg.should_block(&msg.user_name, &msg.md_text())
                             };
-                            if should_block {
+                            if should_block && !msg.is_redpacket() {
                                 filter_handler.push_blocked_msg((*msg).clone());
                                 return;
                             }
@@ -530,7 +530,7 @@ impl ChatroomCommand {
                             );
                         } else {
                             println!(
-                                "{} {}[{}]: {}",
+                                "{} {} [{}]:{}",
                                 msg.time.blue().bold(),
                                 msg.all_name().green().bold(),
                                 msg.oid.bright_black(),

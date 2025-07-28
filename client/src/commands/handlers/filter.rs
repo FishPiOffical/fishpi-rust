@@ -177,6 +177,7 @@ impl FilterCommand {
                     msg.1.oid.bright_black(),
                     filter_tail_content(&formatted_content)
                 );
+                println!("{}","=".repeat(80).bright_black());
             } else {
                 let filtered_content = filter_tail_content(&content);
                 println!(
@@ -187,6 +188,8 @@ impl FilterCommand {
                     msg.1.oid.bright_black(),
                     strip_html_tags_chatroom(&filtered_content)
                 );
+                println!("{}","=".repeat(80).bright_black());
+
             }
         }
 
