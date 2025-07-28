@@ -74,6 +74,7 @@ impl Command for ChatroomCommand {
             :bg <内容>     - 弹幕
             :mutes         - 禁言列表
             :raw <ID>      - 消息原文
+            :r <ID> <内容> - 回复消息
             :cost          - 弹幕价格
             :cls           - 清屏
             :q             - 退出
@@ -130,6 +131,10 @@ impl ChatroomCommand {
             CommandItem {
                 name: ":raw",
                 desc: "查看消息原文",
+            },
+            CommandItem {
+                name: ":r",
+                desc: "回复消息",
             },
             CommandItem {
                 name: ":cost",
