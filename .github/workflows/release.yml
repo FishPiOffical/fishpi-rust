@@ -66,10 +66,10 @@ jobs:
           cp target/${{ matrix.target }}/release/client release/client-macos
 
       - name: Upload artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: ${{ matrix.target }}
-            path: release/*
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: release/*
 
   create-release:
     needs: build
