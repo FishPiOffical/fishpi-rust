@@ -9,6 +9,7 @@ repository = "https://github.com/FishPiOffical/fishpi-rust"
 documentation = "https://docs.rs/fishpi-rust"
 readme = "README.md"
 keywords = ["fishpi"]
+build = "build.rs"
 
 [lib]
 name = "fishpi_rust"

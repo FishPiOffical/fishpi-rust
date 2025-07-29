@@ -3,7 +3,7 @@ use colored::*;
 use std::collections::HashMap;
 
 use crate::commands::handlers::{
-    ArticleCommand, BreezemoonCommand, ChatCommand, ChatroomCommand, NoticeCommand,
+    ArticleCommand, BreezemoonCommand, ChatCommand, ChatroomCommand, NoticeCommand, UpdateCommand
 };
 use crate::commands::{Command, CommandContext, CommandFactory, CommandResult};
 pub struct CommandRegistry {
@@ -142,6 +142,13 @@ impl CommandRegistry {
             |context| Box::new(BreezemoonCommand::new(context.clone())),
             "清风明月",
             vec!["bm", "moon"],
+        );
+
+        self.register(
+            "update",
+            |context| Box::new(UpdateCommand::new(context.clone())),
+            "检查并自动更新到最新版本",
+            vec!["upgrade"],
         );
     }
 }

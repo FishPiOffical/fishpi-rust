@@ -48,7 +48,7 @@ impl App {
     }
 
     fn show_welcome(&self) {
-        println!("{}", "欢迎使用摸鱼派 Rust 客户端".bold().cyan());
+        println!("{} {}", "欢迎使用摸鱼派 Rust 客户端".bold().cyan(), env!("GIT_TAG").bold().cyan());
         println!("{}", "=====================================".cyan());
     }
 
