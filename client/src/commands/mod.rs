@@ -7,7 +7,7 @@ pub mod registry;
 use crate::commands::handlers::{
     ArticleCommand,
     NoticeCommand,
-    // BreezemoonCommand,
+    BreezemoonCommand,
     ChatCommand,
     ChatroomCommand,
     UpdateCommand,
@@ -63,8 +63,8 @@ impl CommandContext {
                 command.execute(&[]).await?;
             }
             "breezemoon" | "bm" => {
-                // let mut command = BreezemoonCommand::new(self.clone());
-                // command.execute(&[]).await?;
+                let mut command = BreezemoonCommand::new(self.clone());
+                command.execute(&[]).await?;
                 println!("清风明月模式暂未实现");
             }
             "update" => {
