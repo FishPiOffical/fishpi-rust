@@ -2,6 +2,7 @@ pub mod auth;
 
 pub use auth::AuthService;
 
+use chrono::{Local, TimeZone};
 use colored::*;
 use regex::Regex;
 
@@ -141,5 +142,12 @@ pub fn format_reply_message(message_id: &str, reply_content: &str, original_cont
             "{}\n\n##### 引用 [↩]({} \"跳转至原消息\")",
             reply_content, quoted_msg_url
         )
+    }
+}
+
+pub fn format_timestamp_millis(ts: i64) -> String {
+    match Local.timestamp_millis_opt(ts) {
+        chrono::LocalResult::Single(dt) => dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+        _ => "无效时间".to_string(),
     }
 }

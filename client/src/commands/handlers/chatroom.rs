@@ -5,7 +5,7 @@ use crate::{
     },
     ui::{CommandCompleter, CommandItem, CrosstermInputHandler},
     utils::{
-        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom, format_reply_message
+        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom, format_reply_message, format_timestamp_millis
     },
 };
 use lru::LruCache;
@@ -690,10 +690,10 @@ impl ChatroomCommand {
                     println!("禁言用户列表 ({}人):", mutes.len());
                     for (i, mute) in mutes.iter().enumerate() {
                         println!(
-                            "  {}. {} - 时间: {}",
+                            "  {}. {} - 禁言至: {}",
                             i + 1,
                             mute.user_name.red(),
-                            mute.time.to_string().yellow()
+                            format_timestamp_millis(mute.time).to_string().yellow()
                         );
                     }
                 }
@@ -765,30 +765,30 @@ impl ChatroomCommand {
         if is_sender {
             match money {
                 m if m < 0 => println!(
-                    "  🎉 你出 {} 赢了 {} 积分!",
+                    "\r  🎉 你出 {} 赢了 {} 积分!",
                     gesture_name.yellow(),
                     m.abs().to_string().cyan().bold()
                 ),
                 m if m > 0 => println!(
-                    "  💔 你出 {} 输了 {} 积分!",
+                    "\r  💔 你出 {} 输了 {} 积分!",
                     gesture_name.yellow(),
                     m.to_string().cyan().bold()
                 ),
-                _ => println!("  🤝 你出 {} 平局!", gesture_name.yellow()),
+                _ => println!("\r  🤝 你出 {} 平局!", gesture_name.yellow()),
             }
         } else {
             match money {
                 m if m > 0 => println!(
-                    "  🎉 你出 {} 赢了 {} 积分!",
+                    "\r  🎉 你出 {} 赢了 {} 积分!",
                     gesture_name.yellow(),
                     m.to_string().cyan().bold()
                 ),
                 m if m < 0 => println!(
-                    "  💔 你出 {} 输了 {} 积分!",
+                    "\r  💔 你出 {} 输了 {} 积分!",
                     gesture_name.yellow(),
                     m.abs().to_string().cyan().bold()
                 ),
-                _ => println!("  🤝 你出 {} 平局!", gesture_name.yellow()),
+                _ => println!("\r  🤝 你出 {} 平局!", gesture_name.yellow()),
             }
         }
     }
