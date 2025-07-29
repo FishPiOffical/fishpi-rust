@@ -101,9 +101,10 @@ impl ChatCommand {
             .yellow()
         );
 
+        let prompt = format!("给{}发送私信> ", username.green());
         loop {
             match input_handler
-                .start_input_loop(&format!("给{}发送私信> ", username.green()))
+                .start_input_loop(&prompt)
                 .await?
             {
                 Some(input) => {

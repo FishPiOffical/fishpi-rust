@@ -57,9 +57,10 @@ impl ArticleCommand {
                 "{}",
                 "输入 r <序号> 阅读, n 下一页, p 上一页, q 退出".cyan()
             );
+            let prompt = format!("{}", "看帖> ".green().bold());
 
             if let Some(input) = input_handler
-                .start_input_loop(&format!("{}", "看帖> ".green().bold()))
+                .start_input_loop(&prompt)
                 .await?
             {
                 let input = input.trim();

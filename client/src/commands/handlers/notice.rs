@@ -54,9 +54,9 @@ impl NoticeCommand {
         ]);
 
         println!("{}", "进入通知模式 (输入 :q 退出, :help 查看命令)".yellow());
-
+        let prompt = format!("{}", "通知> ".green());
         loop {
-            let input = input_handler.start_input_loop(&"通知> ".green()).await?;
+            let input = input_handler.start_input_loop(&prompt).await?;
             let input = match input {
                 Some(i) => i.trim().to_string(),
                 None => break,

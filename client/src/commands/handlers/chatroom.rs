@@ -154,9 +154,10 @@ impl ChatroomCommand {
             },
         ]);
 
+        let prompt = format!("{}", "聊天室> ".green().bold());
         loop {
             match input_handler
-                .start_input_loop(&format!("{}", "聊天室> ".green().bold()))
+                .start_input_loop(&prompt)
                 .await?
             {
                 Some(input) => {
