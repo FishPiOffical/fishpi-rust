@@ -112,7 +112,7 @@ impl NoticeCommand {
                             if result.success {
                                 if let Some(notices) = result.data {
                                     println!("{}通知列表 ({}条):", type_name, notices.len());
-                                    for (i, notice) in notices.iter().enumerate() {
+                                    for (i, notice) in notices.iter().rev().enumerate() {
                                         match notice_type {
                                             NoticeType::Point => {
                                                 let point = NoticePoint::from(notice);
