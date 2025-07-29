@@ -212,7 +212,10 @@ impl ArticleCommand {
                     }
                     "th" => {
                         match article_service.thank(article_id).await {
-                            Ok(res) if res.data.as_ref().and_then(|d| d.get("code")).and_then(|v| v.as_str()) == Some("0") => println!("{}", "感谢成功".green()),
+                            Ok(res) if {
+                                let code = res.data.as_ref().and_then(|d| d.get("code")).and_then(|v| v.as_str());
+                                code == Some("0") || code == Some("-1")
+                            } => println!("{}", "感谢成功".green()),
                             Ok(_) => println!("{}", "感谢失败: 未知响应".yellow()),
                             Err(e) => println!("感谢失败: {}", e),
                         }

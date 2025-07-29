@@ -65,7 +65,6 @@ impl CommandContext {
             "breezemoon" | "bm" => {
                 let mut command = BreezemoonCommand::new(self.clone());
                 command.execute(&[]).await?;
-                println!("清风明月模式暂未实现");
             }
             "update" => {
                 let mut command = UpdateCommand::new(self.clone());
