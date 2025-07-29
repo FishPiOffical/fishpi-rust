@@ -27,12 +27,30 @@ impl UpdateCommand {
             .await?
             .json::<serde_json::Value>()
             .await?;
-
+    
         let tag = resp["tag_name"].as_str().unwrap_or("").to_string();
-        let asset_url = resp["assets"][0]["browser_download_url"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+    
+        let asset_name = match std::env::consts::OS {
+            "windows" => "client-windows.exe",
+            "linux" => "client-linux",
+            "macos" => "client-macos",
+            _ => return Err(anyhow::anyhow!("不支持的操作系统")),
+        };
+    
+        let empty_vec = vec![];
+        let assets = resp["assets"].as_array().unwrap_or(&empty_vec);
+        let mut asset_url = String::new();
+        for asset in assets {
+            if asset["name"].as_str().unwrap_or("") == asset_name {
+                asset_url = asset["browser_download_url"].as_str().unwrap_or("").to_string();
+                break;
+            }
+        }
+    
+        if asset_url.is_empty() {
+            return Err(anyhow::anyhow!(format!("未找到 {} 的可执行文件", asset_name)));
+        }
+    
         Ok((tag, asset_url))
     }
 
@@ -56,9 +74,11 @@ impl UpdateCommand {
             let script = format!(
                 r#"
 @echo off
-ping 127.0.0.1 -n 2 > nul
+REM 等待主程序完全退出
+ping 127.0.0.1 -n 3 > nul
 move /Y "{new}" "{old}"
 start "" "{old}"
+del "%~f0"
 "#,
                 new = new_exe_path,
                 old = exe_path
