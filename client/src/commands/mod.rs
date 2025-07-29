@@ -6,7 +6,7 @@ pub mod handlers;
 pub mod registry;
 use crate::commands::handlers::{
     ArticleCommand,
-    // NoticeCommand,
+    NoticeCommand,
     // BreezemoonCommand,
     ChatCommand,
     ChatroomCommand,
@@ -58,9 +58,8 @@ impl CommandContext {
                 command.execute(&[]).await?;
             }
             "notice" | "n" => {
-                // let mut command = NoticeCommand::new(self.clone());
-                // command.execute(&[]).await?;
-                println!("通知模式暂未实现");
+                let mut command = NoticeCommand::new(self.clone());
+                command.execute(&[]).await?;
             }
             "breezemoon" | "bm" => {
                 // let mut command = BreezemoonCommand::new(self.clone());

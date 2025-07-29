@@ -5,13 +5,11 @@ use crate::models::notice::{
     NoticePoint, NoticeSystem, NoticeType, NoticeWebsocketInfo,
 };
 use crate::models::user::Response;
-use futures::{SinkExt, StreamExt};
-use log::debug;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use url::Url;
+use tokio_tungstenite::tungstenite::protocol::Message;
+use std::collections::HashMap;
 
 /// 通知监听器类型
 pub type NoticeListener = Box<dyn Fn(NoticeMsg) + Send + Sync>;
@@ -131,17 +129,19 @@ impl NoticeService {
         }
 
         match notice_type {
-            NoticeType::POINT => {
+            t if t == NoticeType::Point.as_str() => {
                 convert_notices::<NoticePoint>(self, page, "获取积分通知列表失败").await
             }
-            NoticeType::COMMENTED => {
+            t if t == NoticeType::Commented.as_str() => {
                 convert_notices::<NoticeComment>(self, page, "获取评论通知列表失败").await
             }
-            NoticeType::AT => convert_notices::<NoticeAt>(self, page, "获取提及通知列表失败").await,
-            NoticeType::FOLLOWING => {
+            t if t == NoticeType::At.as_str() => {
+                convert_notices::<NoticeAt>(self, page, "获取提及通知列表失败").await
+            }
+            t if t == NoticeType::Following.as_str() => {
                 convert_notices::<NoticeFollow>(self, page, "获取关注通知列表失败").await
             }
-            NoticeType::SYSTEM => {
+            t if t == NoticeType::System.as_str() => {
                 convert_notices::<NoticeSystem>(self, page, "获取系统通知列表失败").await
             }
             _ => match self.notice_api.list(notice_type, page).await {
@@ -172,188 +172,92 @@ impl NoticeService {
         }
     }
 
-    /// 连接实时用户通知
-    ///
-    /// * `timeout` - 连接超时时间（秒）
-    pub async fn connect(&self, timeout: Option<u64>) -> Response<()> {
-        let timeout_value = timeout.unwrap_or(10);
-
+    pub async fn connect(&self, _timeout: Option<u64>) -> Response<()> {
         // 如果已连接，先断开
         if self.is_connected().await {
-            debug!("通知WebSocket已连接，先断开再重新连接");
             let _ = self.disconnect().await;
         }
 
-        debug!("开始连接通知WebSocket");
-
-        // 获取API服务器基础URL
         let client = ApiClient::new();
         let base_url = client.base_url();
         if base_url.is_empty() {
-            debug!("未设置API基础URL");
             return Response::error("未设置API基础URL");
         }
 
-        // 获取WebSocket URL
         let ws_path = match self.notice_api.get_websocket_url().await {
-            Ok(path) => {
-                debug!("获取到通知WebSocket地址: {}", path);
-                path
-            }
-            Err(e) => {
-                debug!("获取WebSocket URL失败: {}", e);
-                self.notify_error_handlers(&format!("获取WebSocket URL失败: {}", e))
-                    .await;
-                return Response::error(&format!("获取WebSocket URL失败: {}", e));
-            }
+            Ok(path) => path,
+            Err(e) => return Response::error(&format!("获取WebSocket URL失败: {}", e)),
         };
 
-        // 构建WebSocket URL
         let full_ws_url = if base_url.starts_with("https") {
-            format!(
-                "wss://{}/{}",
-                base_url.trim_start_matches("https://"),
-                ws_path
-            )
+            format!("wss://{}/{}", base_url.trim_start_matches("https://"), ws_path)
         } else {
-            format!(
-                "ws://{}/{}",
-                base_url.trim_start_matches("http://"),
-                ws_path
-            )
+            format!("ws://{}/{}", base_url.trim_start_matches("http://"), ws_path)
         };
 
-        // 尝试连接
-        let url = match Url::parse(&full_ws_url) {
-            Ok(url) => url,
-            Err(e) => {
-                let error_msg = format!("解析WebSocket URL失败: {}", e);
-                debug!("{}", error_msg);
-                self.notify_error_handlers(&error_msg).await;
-                return Response::error(&error_msg);
-            }
-        };
-
-        let (ws_stream, _) = match connect_async(url).await {
-            Ok(stream) => stream,
-            Err(e) => {
-                let error_msg = format!("连接WebSocket失败: {}", e);
-                debug!("{}", error_msg);
-                self.notify_error_handlers(&error_msg).await;
-                return Response::error(&error_msg);
-            }
-        };
-
-        let (mut write, read) = ws_stream.split();
-        let (sender, mut receiver) = futures::channel::mpsc::unbounded();
-
-        // 保存发送端
-        {
-            let mut ws_sender = self.websocket_sender.lock().await;
-            *ws_sender = Some(sender);
-        }
-
-        // 设置连接信息
-        {
-            let mut info = self.websocket_info.lock().await;
-            *info = Some(NoticeWebsocketInfo {
-                connected: true,
-                retry_times: 0,
-                connection_id: Some(format!("notice-{}", chrono::Utc::now().timestamp_millis())),
-            });
-        }
-
-        // 创建写入任务
-        // let self_clone = self.clone();
-        tokio::spawn(async move {
-            while let Some(message) = receiver.next().await {
-                if let Err(e) = write.send(message).await {
-                    debug!("发送WebSocket消息失败: {}", e);
-                    break;
-                }
-            }
-        });
-
-        // 创建读取任务
-        let self_clone = self.clone();
-        tokio::spawn(async move {
-            let mut read_stream = read;
-            while let Some(message_result) = read_stream.next().await {
-                match message_result {
-                    Ok(message) => {
-                        if let Message::Text(text) = message {
-                            if text == "heartbeat" || text == "pong" {
-                                debug!("收到WebSocket心跳消息: {}", text);
-                                continue;
-                            }
-
-                            // 直接处理消息
-                            if let Ok(json) = serde_json::from_str::<Value>(&text) {
-                                if let Some(command) = json.get("command").and_then(|v| v.as_str())
-                                {
-                                    if NoticeMsgType::values().contains(&command) {
-                                        let notice_msg = NoticeMsg::from(&json);
-                                        let listeners = self_clone.message_listeners.lock().await;
-                                        for listener in listeners.iter() {
-                                            listener(notice_msg.clone());
-                                        }
-                                    }
-                                }
+        let message_handler = {
+            let listeners = self.message_listeners.clone();
+            move |value: Value| {
+                let listeners = listeners.clone();
+                tokio::spawn(async move {
+                    if let Some(command) = value.get("command").and_then(|v| v.as_str()) {
+                        let msg_type = NoticeMsgType::from_str(command);
+                        if NoticeMsgType::values().contains(&msg_type) {
+                            let notice_msg = NoticeMsg::from(&value);
+                            let listeners = listeners.lock().await;
+                            for listener in listeners.iter() {
+                                listener(notice_msg.clone());
                             }
                         }
                     }
-                    Err(e) => {
-                        let error_msg = format!("接收WebSocket消息失败: {}", e);
-                        debug!("{}", error_msg);
-                        self_clone.notify_error_handlers(&error_msg).await;
-
-                        // 延迟重连
-                        let self_clone = self_clone.clone();
-                        tokio::task::spawn_blocking(move || {
-                            let rt = tokio::runtime::Runtime::new().unwrap();
-                            rt.block_on(async {
-                                tokio::time::sleep(tokio::time::Duration::from_secs(timeout_value))
-                                    .await;
-                                let _ = self_clone.connect(Some(timeout_value)).await;
-                            });
-                        });
-                        break;
-                    }
-                }
-            }
-
-            // WebSocket连接已关闭
-            debug!("WebSocket连接已关闭");
-            self_clone.notify_close_handlers().await;
-
-            // 延迟重连
-            let self_clone = self_clone.clone();
-            tokio::task::spawn_blocking(move || {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(async {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(timeout_value)).await;
-                    let _ = self_clone.connect(Some(timeout_value)).await;
                 });
-            });
-        });
+            }
+        };
 
-        debug!("WebSocket连接成功");
-        Response::success(())
-    }
+        let error_handler = {
+            let error_handlers = self.error_handlers.clone();
+            move |err: String| {
+                let error_handlers = error_handlers.clone();
+                tokio::spawn(async move {
+                    let handlers = error_handlers.lock().await;
+                    for handler in handlers.iter() {
+                        handler(err.clone());
+                    }
+                });
+            }
+        };
 
-    /// 通知所有错误处理器
-    async fn notify_error_handlers(&self, error_msg: &str) {
-        let handlers = self.error_handlers.lock().await;
-        for handler in handlers.iter() {
-            handler(error_msg.to_string());
+        let close_handler = {
+            let close_handlers = self.close_handlers.clone();
+            move || {
+                let close_handlers = close_handlers.clone();
+                tokio::spawn(async move {
+                    let handlers = close_handlers.lock().await;
+                    for handler in handlers.iter() {
+                        handler();
+                    }
+                });
+            }
+        };
+
+        let mut params = HashMap::new();
+        if let Some(token) = client.get_token().await {
+            params.insert("apiKey".to_string(), token);
         }
-    }
 
-    /// 通知所有关闭处理器
-    async fn notify_close_handlers(&self) {
-        let handlers = self.close_handlers.lock().await;
-        for handler in handlers.iter() {
-            handler();
+        let result = client
+            .connect_websocket(
+                &full_ws_url,
+                Some(params),
+                message_handler,
+                Some(error_handler),
+                Some(close_handler),
+            )
+            .await;
+
+        match result {
+            Ok(_) => Response::success(()),
+            Err(e) => Response::error(&format!("连接WebSocket失败: {}", e)),
         }
     }
 
@@ -365,14 +269,14 @@ impl NoticeService {
         let mut listeners = self.message_listeners.lock().await;
         listeners.push(Box::new(callback));
 
-        // 如果还没有连接，则自动连接
-        {
-            let info = self.websocket_info.lock().await;
-            if info.is_none() || !info.as_ref().unwrap().connected {
-                drop(info);
-                let _ = self.connect(None).await;
-            }
-        }
+        // // 如果还没有连接，则自动连接
+        // {
+        //     let info = self.websocket_info.lock().await;
+        //     if info.is_none() || !info.as_ref().unwrap().connected {
+        //         drop(info);
+        //         let _ = self.connect(None).await;
+        //     }
+        // }
 
         Response::success(())
     }

@@ -58,6 +58,32 @@ impl App {
             Ok(()) => {
                 println!("{}", "登录成功!".green().bold());
                 self.username = self.auth_service.get_user_name().await?;
+
+                println!("{}", "已连接到通知服务".green());
+
+                let notice_service = &self.client.notice;
+                notice_service.add_listener(move |notice_msg| {
+                    match notice_msg.command.as_str() {
+                        "refreshNotification" => {
+                            println!("{}", "\r[您有新通知]".green());
+                        }
+                        "warnBroadcast" => {
+                            if let Some(ref c) = notice_msg.content {
+                                println!("{}: {}", "系统公告".red(), c.yellow());
+                            } else {
+                                println!("{}", "收到公告，但无内容".yellow());
+                            }
+                        }
+                        "newIdleChatMessage" => {
+                            println!("\r{}{}:{}", "[新私信]".blue(), notice_msg.sender_name().green(), notice_msg.preview_text());
+                        }
+                        _ => {
+                            println!("{}: {:?}", "Unknown类型通知".yellow(), notice_msg);
+                        }
+                    }
+                }).await;
+                notice_service.connect(None).await;
+
                 return Ok(true);
             }
             Err(_) => {

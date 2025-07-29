@@ -2,23 +2,63 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// 通知类型
-pub struct NoticeType;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum NoticeType {
+    /// 积分
+    Point,
+    /// 评论
+    Commented,
+    /// 回复
+    Reply,
+    /// 提及我的
+    At,
+    /// 我关注的
+    Following,
+    /// 同城
+    Broadcast,
+    /// 系统
+    System,
+}
 
 impl NoticeType {
-    /// 积分
-    pub const POINT: &'static str = "point";
-    /// 评论
-    pub const COMMENTED: &'static str = "commented";
-    /// 回复
-    pub const REPLY: &'static str = "reply";
-    /// 提及我的
-    pub const AT: &'static str = "at";
-    /// 我关注的
-    pub const FOLLOWING: &'static str = "following";
-    /// 同城
-    pub const BROADCAST: &'static str = "broadcast";
-    /// 系统
-    pub const SYSTEM: &'static str = "sys-announce";
+    /// 获取字符串表示
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            NoticeType::Point => "point",
+            NoticeType::Commented => "commented",
+            NoticeType::Reply => "reply",
+            NoticeType::At => "at",
+            NoticeType::Following => "following",
+            NoticeType::Broadcast => "broadcast",
+            NoticeType::System => "sys-announce",
+        }
+    }
+
+    /// 从字符串转换为枚举
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "point" => Some(NoticeType::Point),
+            "commented" => Some(NoticeType::Commented),
+            "reply" => Some(NoticeType::Reply),
+            "at" => Some(NoticeType::At),
+            "following" => Some(NoticeType::Following),
+            "broadcast" => Some(NoticeType::Broadcast),
+            "sys-announce" => Some(NoticeType::System),
+            _ => None,
+        }
+    }
+
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            NoticeType::Point => "积分",
+            NoticeType::Commented => "评论",
+            NoticeType::Reply => "回复",
+            NoticeType::At => "提及",
+            NoticeType::Following => "关注",
+            NoticeType::Broadcast => "同城",
+            NoticeType::System => "系统",
+        }
+    }
 }
 
 /// 通知数
@@ -485,17 +525,43 @@ impl From<&Value> for NoticeSystem {
 }
 
 /// 通知消息类型
-pub struct NoticeMsgType;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub enum NoticeMsgType {
+    #[serde(rename = "refreshNotification")]
+    RefreshNotification,
+    #[serde(rename = "warnBroadcast")]
+    WarnBroadcast,
+    #[serde(rename = "newIdleChatMessage")]
+    NewIdleChatMessage,
+    #[serde(other)]
+    Unknown,
+}
 
 impl NoticeMsgType {
-    /// 刷新通知数，需调用 Notice.count 获取明细
-    pub const REFRESH: &'static str = "refreshNotification";
-    /// 全局公告
-    pub const WARN_BROADCAST: &'static str = "warnBroadcast";
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            NoticeMsgType::RefreshNotification => "refreshNotification",
+            NoticeMsgType::WarnBroadcast => "warnBroadcast",
+            NoticeMsgType::NewIdleChatMessage => "newIdleChatMessage",
+            NoticeMsgType::Unknown => "unknown",
+        }
+    }
 
-    /// 获取所有通知类型
-    pub fn values() -> Vec<&'static str> {
-        vec![Self::REFRESH, Self::WARN_BROADCAST]
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "refreshNotification" => NoticeMsgType::RefreshNotification,
+            "warnBroadcast" => NoticeMsgType::WarnBroadcast,
+            "newIdleChatMessage" => NoticeMsgType::NewIdleChatMessage,
+            _ => NoticeMsgType::Unknown,
+        }
+    }
+
+    pub fn values() -> Vec<NoticeMsgType> {
+        vec![
+            NoticeMsgType::RefreshNotification,
+            NoticeMsgType::WarnBroadcast,
+            NoticeMsgType::NewIdleChatMessage,
+        ]
     }
 }
 
@@ -514,7 +580,14 @@ pub struct NoticeMsg {
     pub content: Option<String>,
     /// 全局公告发布者，仅 `warnBroadcast` 有信息
     pub who: Option<String>,
+    #[serde(rename = "preview")]
+    pub preview: Option<String>,
+    #[serde(rename = "senderAvatar")]
+    pub sender_avatar: Option<String>,
+    #[serde(rename = "senderUserName")]
+    pub sender_user_name: Option<String>,
 }
+
 
 impl From<&Value> for NoticeMsg {
     fn from(data: &Value) -> Self {
@@ -522,7 +595,7 @@ impl From<&Value> for NoticeMsg {
             command: data
                 .get("command")
                 .and_then(|v| v.as_str())
-                .unwrap_or(NoticeMsgType::REFRESH)
+                .unwrap_or(NoticeMsgType::RefreshNotification.as_str())
                 .to_string(),
             user_id: data
                 .get("userId")
@@ -538,6 +611,18 @@ impl From<&Value> for NoticeMsg {
                 .get("who")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string()),
+            preview: data
+                .get("preview")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
+            sender_avatar: data
+                .get("senderAvatar")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
+            sender_user_name: data
+                .get("senderUserName")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string()),
         }
     }
 }
@@ -549,6 +634,14 @@ impl NoticeMsg {
 
     pub fn to_json(&self) -> Value {
         serde_json::to_value(self).unwrap_or(Value::Null)
+    }
+
+    pub fn sender_name(&self) -> &str {
+        self.sender_user_name.as_deref().unwrap_or("未知用户")
+    }
+
+    pub fn preview_text(&self) -> &str {
+        self.preview.as_deref().unwrap_or("无内容")
     }
 }
 
@@ -585,7 +678,7 @@ impl NoticeItem for NoticePoint {
     }
 
     fn notice_type() -> &'static str {
-        NoticeType::POINT
+        NoticeType::Point.as_str()
     }
 }
 
@@ -599,7 +692,7 @@ impl NoticeItem for NoticeComment {
     }
 
     fn notice_type() -> &'static str {
-        NoticeType::COMMENTED
+        NoticeType::Commented.as_str()
     }
 }
 
@@ -613,7 +706,7 @@ impl NoticeItem for NoticeAt {
     }
 
     fn notice_type() -> &'static str {
-        NoticeType::AT
+        NoticeType::At.as_str()
     }
 }
 
@@ -627,7 +720,7 @@ impl NoticeItem for NoticeFollow {
     }
 
     fn notice_type() -> &'static str {
-        NoticeType::FOLLOWING
+        NoticeType::Following.as_str()
     }
 }
 
@@ -641,6 +734,6 @@ impl NoticeItem for NoticeSystem {
     }
 
     fn notice_type() -> &'static str {
-        NoticeType::SYSTEM
+        NoticeType::System.as_str()
     }
 }

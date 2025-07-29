@@ -195,7 +195,9 @@ impl ChatroomCommand {
                             } else {
                                 1
                             };
+                            println!("{}", "=".repeat(50).yellow());
                             self.show_history(page).await;
+                            println!("{}", "=".repeat(50).yellow());
                         }
                         ":users" | ":u" => {
                             self.show_online_users().await;
@@ -403,19 +405,19 @@ impl ChatroomCommand {
                                 if is_quote_message(content) {
                                     let formatted_content = format_quote_message(content);
                                     println!(
-                                        "\r{} {} [{}]: {}",
-                                        msg.time.blue().bold(),
-                                        msg.all_name().green().bold(),
-                                        msg.oid.bright_black(),
+                                        "\r{} {} {}: {}",
+                                        msg.time.blue(),
+                                        msg.all_name().green(),
+                                        format!("[{}]", msg.oid).bright_black(),
                                         filter_tail_content(&formatted_content)
                                     );
                                 } else {
                                     let filtered_content = filter_tail_content(content);
                                     println!(
-                                        "\r{} {} [{}]: {}",
-                                        msg.time.blue().bold(),
-                                        msg.all_name().green().bold(),
-                                        msg.oid.bright_black(),
+                                        "\r{} {} {}: {}",
+                                        msg.time.blue(),
+                                        msg.all_name().green(),
+                                        format!("[{}]", msg.oid).bright_black(),
                                         strip_html_tags_chatroom(&filtered_content)
                                     );
                                 }
@@ -541,10 +543,10 @@ impl ChatroomCommand {
                         if msg.is_redpacket() {
                             let redpacket = msg.redpacket().unwrap();
                             println!(
-                                "{} {}[{}]: {} 红包 - {} 个, {} 积分",
+                                "{} {} {}: {} 红包 - {} 个, {} 积分",
                                 msg.time.blue(),
                                 msg.all_name().green(),
-                                msg.oid.bright_black(),
+                                format!("[{}]", msg.oid).bright_black(),
                                 RedPacketType::to_name(&redpacket.type_).red(),
                                 redpacket.count.to_string().yellow(),
                                 redpacket.money.to_string().yellow()
@@ -552,28 +554,28 @@ impl ChatroomCommand {
                         } else if msg.is_music() {
                             let music = msg.music().unwrap();
                             println!(
-                                "{} {}[{}]: 🎵 {} - {}",
+                                "{} {} {}: 🎵 {} - {}",
                                 msg.time.blue(),
                                 msg.all_name().green(),
-                                msg.oid.bright_black(),
+                                format!("[{}]", msg.oid).bright_black(),
                                 music.title.magenta(),
                                 music.from.magenta()
                             );
                         } else if msg.is_weather() {
                             let weather = msg.weather().unwrap();
                             println!(
-                                "{} {}[{}]: 🌤️ {}",
+                                "{} {} {}: 🌤️ {}",
                                 msg.time.blue(),
                                 msg.all_name().green(),
-                                msg.oid.bright_black(),
+                                format!("[{}]", msg.oid).bright_black(),
                                 weather.format_colored_weather()
                             );
                         } else {
                             println!(
-                                "{} {} [{}]:{}",
+                                "{} {} {}:{}",
                                 msg.time.blue().bold(),
                                 msg.all_name().green().bold(),
-                                msg.oid.bright_black(),
+                                format!("[{}]", msg.oid).bright_black(),
                                 strip_html_tags_chatroom(msg.content_text())
                             );
                         }
@@ -587,7 +589,6 @@ impl ChatroomCommand {
                 result.message.unwrap_or("未知错误".to_string())
             );
         }
-        println!("{}", "=".repeat(50).yellow());
     }
 
     async fn show_online_users(&self) {
