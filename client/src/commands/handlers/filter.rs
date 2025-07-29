@@ -64,8 +64,20 @@ impl FilterConfig {
         self.keywords.retain(|k| k != kw);
     }
 
-    pub fn remove_regex(&mut self, re: &str) {
-        self.regexes.retain(|r| r != re);
+    pub fn remove_regex(&mut self, re: &str) -> bool {
+        if let Some(pos) = self.regexes.iter().position(|r| r == re) {
+            self.regexes.remove(pos);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn remove_regex_by_index(&mut self, idx: usize) -> Option<String> {
+        if idx == 0 || idx > self.regexes.len() {
+            return None;
+        }
+        Some(self.regexes.remove(idx - 1))
     }
 
     pub fn should_block(&self, username: &str, content: &str) -> bool {
@@ -114,8 +126,9 @@ impl FilterCommand {
                 cfg.add_keyword(kw.to_string());
                 println!("{}", format!("已添加屏蔽关键字：{}", kw).green());
             }
-            ["re", re] => {
-                cfg.add_regex(re.to_string());
+            ["re", ..] => {
+                let re = args[1..].join(" ");
+                cfg.add_regex(re.clone());
                 println!("{}", format!("已添加屏蔽正则：{}", re).green());
             }
             ["rm", "user", user] => {
@@ -126,9 +139,21 @@ impl FilterCommand {
                 cfg.remove_keyword(kw);
                 println!("{}", format!("已移除屏蔽关键字：{}", kw).yellow());
             }
-            ["rm", "re", re] => {
-                cfg.remove_regex(re);
-                println!("{}", format!("已移除屏蔽正则：{}", re).yellow());
+            ["rm", "re", ..] => {
+                let re = args[2..].join(" ");
+                if let Ok(idx) = re.parse::<usize>() {
+                    if let Some(removed) = cfg.remove_regex_by_index(idx) {
+                        println!("{}", format!("已移除屏蔽正则：{}", removed).yellow());
+                    } else {
+                        println!("{}", "编号无效".red());
+                    }
+                } else {
+                    if cfg.remove_regex(&re) {
+                        println!("{}", format!("已移除屏蔽正则：{}", re).yellow());
+                    } else {
+                        println!("{}", "未找到该正则".red());
+                    }
+                }
             }
             ["list"] | ["l"] => {
                 println!("{}", "屏蔽用户:".cyan());
@@ -211,7 +236,7 @@ impl Command for FilterCommand {
             :bl user <用户名>         添加屏蔽用户
             :bl kw <关键字>           添加屏蔽前缀
             :bl re <正则>             添加屏蔽正则
-            :bl rm user|kw|re <内容>  移除屏蔽项
+            :bl rm user|kw|re <内容>  移除屏蔽项(移除正则可用::bl rm re <index>)
             :bl list                  查看所有屏蔽规则
             :bl vb                    查看最近被屏蔽的消息
         "#
