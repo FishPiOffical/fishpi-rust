@@ -46,3 +46,4 @@ token.txt
 !.github/
 !.github/**
 .github/copilot-instructions.md
+!build.rs
