@@ -48,7 +48,11 @@ impl App {
     }
 
     fn show_welcome(&self) {
-        println!("{} {}", "欢迎使用摸鱼派 Rust 客户端".bold().cyan(), env!("GIT_TAG").bold().cyan());
+        println!(
+            "{} {}",
+            "欢迎使用摸鱼派 Rust 客户端".bold().cyan(),
+            env!("GIT_TAG").bold().cyan()
+        );
         println!("{}", "=====================================".cyan());
     }
 
@@ -62,8 +66,8 @@ impl App {
                 println!("{}", "已连接到通知服务".green());
 
                 let notice_service = &self.client.notice;
-                notice_service.add_listener(move |notice_msg| {
-                    match notice_msg.command.as_str() {
+                notice_service
+                    .add_listener(move |notice_msg| match notice_msg.command.as_str() {
                         "refreshNotification" => {
                             println!("{}", "\r[您有新通知]".green());
                         }
@@ -75,13 +79,18 @@ impl App {
                             }
                         }
                         "newIdleChatMessage" => {
-                            println!("\r{}{}:{}", "[新私信]".blue(), notice_msg.sender_name().green(), notice_msg.preview_text());
+                            println!(
+                                "\r{}{}:{}",
+                                "[新私信]".blue(),
+                                notice_msg.sender_name().green(),
+                                notice_msg.preview_text()
+                            );
                         }
                         _ => {
                             println!("{}: {:?}", "Unknown类型通知".yellow(), notice_msg);
                         }
-                    }
-                }).await;
+                    })
+                    .await;
                 notice_service.connect(None).await;
 
                 return Ok(true);

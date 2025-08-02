@@ -103,10 +103,7 @@ impl ChatCommand {
 
         let prompt = format!("给{}发送私信> ", username.green());
         loop {
-            match input_handler
-                .start_input_loop(&prompt)
-                .await?
-            {
+            match input_handler.start_input_loop(&prompt).await? {
                 Some(input) => {
                     if input.is_empty() {
                         continue;

@@ -5,10 +5,10 @@ use crate::{
     },
     ui::{CommandCompleter, CommandItem, CrosstermInputHandler},
     utils::{
-        filter_tail_content, format_quote_message, is_quote_message, strip_html_tags_chatroom, format_reply_message, format_timestamp_millis
+        filter_tail_content, format_quote_message, format_reply_message, format_timestamp_millis,
+        is_quote_message, strip_html_tags_chatroom,
     },
 };
-use lru::LruCache;
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Local;
@@ -19,6 +19,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use fishpi_rust::{ChatRoomDataContent, ChatRoomMessage, ChatRoomUser, GestureType, RedPacketType};
+use lru::LruCache;
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -29,7 +30,6 @@ pub struct ChatroomCommand {
     redpacket_handler: RedpacketCommand,
     filter_handler: FilterCommand,
     message_cache: Arc<Mutex<LruCache<String, ChatRoomMessage>>>,
-
 }
 
 impl ChatroomCommand {
@@ -39,7 +39,9 @@ impl ChatroomCommand {
             online_users: Arc::new(Mutex::new(vec![])),
             redpacket_handler: RedpacketCommand::new(context),
             filter_handler: FilterCommand::new(),
-            message_cache: Arc::new(Mutex::new(LruCache::new(std::num::NonZeroUsize::new(128).unwrap()))),
+            message_cache: Arc::new(Mutex::new(LruCache::new(
+                std::num::NonZeroUsize::new(128).unwrap(),
+            ))),
         }
     }
 }
@@ -156,10 +158,7 @@ impl ChatroomCommand {
 
         let prompt = format!("{}", "聊天室> ".green().bold());
         loop {
-            match input_handler
-                .start_input_loop(&prompt)
-                .await?
-            {
+            match input_handler.start_input_loop(&prompt).await? {
                 Some(input) => {
                     if input.is_empty() {
                         continue;
@@ -270,12 +269,21 @@ impl ChatroomCommand {
                             if parts.len() > 2 {
                                 let oid = parts[1];
                                 let reply_content = parts[2..].join(" ");
-                                let raw_content = self.context.client.chatroom.get_raw_message(oid).await?;
+                                let raw_content =
+                                    self.context.client.chatroom.get_raw_message(oid).await?;
                                 let user_name = {
                                     let mut cache = self.message_cache.lock().unwrap();
-                                    cache.get(oid).map(|msg| msg.user_name.clone()).unwrap_or_default()
+                                    cache
+                                        .get(oid)
+                                        .map(|msg| msg.user_name.clone())
+                                        .unwrap_or_default()
                                 };
-                                let msg = format_reply_message(oid, &reply_content, Some(raw_content.as_str()), Some(user_name.as_str()));
+                                let msg = format_reply_message(
+                                    oid,
+                                    &reply_content,
+                                    Some(raw_content.as_str()),
+                                    Some(user_name.as_str()),
+                                );
                                 self.send_message(&msg).await;
                             } else {
                                 println!("{}", "用法: :r <消息ID> <回复内容>".yellow());
@@ -715,11 +723,7 @@ impl ChatroomCommand {
                 println!("{}", raw_content.cyan());
             }
             Err(e) => {
-                println!(
-                    "{}: {}",
-                    "获取消息原文失败".red(),
-                    e.to_string()
-                );
+                println!("{}: {}", "获取消息原文失败".red(), e.to_string());
             }
         }
     }

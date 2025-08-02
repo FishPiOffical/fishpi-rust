@@ -6,10 +6,10 @@ use crate::models::notice::{
 };
 use crate::models::user::Response;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_tungstenite::tungstenite::protocol::Message;
-use std::collections::HashMap;
 
 /// 通知监听器类型
 pub type NoticeListener = Box<dyn Fn(NoticeMsg) + Send + Sync>;
@@ -190,9 +190,17 @@ impl NoticeService {
         };
 
         let full_ws_url = if base_url.starts_with("https") {
-            format!("wss://{}/{}", base_url.trim_start_matches("https://"), ws_path)
+            format!(
+                "wss://{}/{}",
+                base_url.trim_start_matches("https://"),
+                ws_path
+            )
         } else {
-            format!("ws://{}/{}", base_url.trim_start_matches("http://"), ws_path)
+            format!(
+                "ws://{}/{}",
+                base_url.trim_start_matches("http://"),
+                ws_path
+            )
         };
 
         let message_handler = {

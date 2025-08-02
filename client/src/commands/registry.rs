@@ -3,7 +3,7 @@ use colored::*;
 use std::collections::HashMap;
 
 use crate::commands::handlers::{
-    ArticleCommand, BreezemoonCommand, ChatCommand, ChatroomCommand, NoticeCommand, UpdateCommand
+    ArticleCommand, BreezemoonCommand, ChatCommand, ChatroomCommand, NoticeCommand, UpdateCommand,
 };
 use crate::commands::{Command, CommandContext, CommandFactory, CommandResult};
 pub struct CommandRegistry {

@@ -129,7 +129,12 @@ pub fn filter_tail_content(content: &str) -> String {
     content.to_string()
 }
 
-pub fn format_reply_message(message_id: &str, reply_content: &str, original_content: Option<&str>, username: Option<&str>) -> String {
+pub fn format_reply_message(
+    message_id: &str,
+    reply_content: &str,
+    original_content: Option<&str>,
+    username: Option<&str>,
+) -> String {
     let quoted_msg_url = format!("https://fishpi.cn/cr#chatroom{}", message_id);
     if let (Some(user), Some(content)) = (username, original_content) {
         let preview = content.trim().to_string();

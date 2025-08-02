@@ -1,11 +1,14 @@
+use crate::commands::{Command, CommandContext, CommandResult};
+use crate::ui::{CommandItem, CrosstermInputHandler};
+use crate::utils::strip_html_tags;
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::*;
-use crossterm::{cursor, execute, terminal::{Clear, ClearType}};
-use crate::ui::{CrosstermInputHandler, CommandItem};
-use crate::commands::{Command, CommandContext, CommandResult};
-use fishpi_rust::{NoticeType, NoticePoint, NoticeComment, NoticeAt, NoticeFollow, NoticeSystem};
-use crate::utils::strip_html_tags;
+use crossterm::{
+    cursor, execute,
+    terminal::{Clear, ClearType},
+};
+use fishpi_rust::{NoticeAt, NoticeComment, NoticeFollow, NoticePoint, NoticeSystem, NoticeType};
 
 pub struct NoticeCommand {
     context: CommandContext,
@@ -16,8 +19,6 @@ impl NoticeCommand {
         Self { context }
     }
 }
-
-
 
 #[async_trait]
 impl Command for NoticeCommand {
@@ -44,13 +45,34 @@ impl NoticeCommand {
     async fn notice_loop(&self, _args: &[&str]) -> Result<()> {
         let mut input_handler = CrosstermInputHandler::new();
         input_handler.set_commands(vec![
-            CommandItem { name: ":list", desc: "显示通知列表" },
-            CommandItem { name: ":unread", desc: "未读通知统计" },
-            CommandItem { name: ":read", desc: "标记类型已读" },
-            CommandItem { name: ":readall", desc: "全部标记已读" },
-            CommandItem { name: ":cls", desc: "清屏" },
-            CommandItem { name: ":q", desc: "退出" },
-            CommandItem { name: ":help", desc: "帮助" },
+            CommandItem {
+                name: ":list",
+                desc: "显示通知列表",
+            },
+            CommandItem {
+                name: ":unread",
+                desc: "未读通知统计",
+            },
+            CommandItem {
+                name: ":read",
+                desc: "标记类型已读",
+            },
+            CommandItem {
+                name: ":readall",
+                desc: "全部标记已读",
+            },
+            CommandItem {
+                name: ":cls",
+                desc: "清屏",
+            },
+            CommandItem {
+                name: ":q",
+                desc: "退出",
+            },
+            CommandItem {
+                name: ":help",
+                desc: "帮助",
+            },
         ]);
 
         println!("{}", "进入通知模式 (输入 :q 退出, :help 查看命令)".yellow());
@@ -78,7 +100,11 @@ impl NoticeCommand {
                     break;
                 }
                 ":cls" | ":clear" => {
-                    execute!(std::io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+                    execute!(
+                        std::io::stdout(),
+                        Clear(ClearType::All),
+                        cursor::MoveTo(0, 0)
+                    )?;
                     continue;
                 }
                 ":help" => {
@@ -102,7 +128,11 @@ impl NoticeCommand {
                         types.iter().cloned().collect()
                     };
                     if query_types.is_empty() {
-                        println!("{}: {}", "无效的通知类型".red(), parts.get(1).unwrap_or(&""));
+                        println!(
+                            "{}: {}",
+                            "无效的通知类型".red(),
+                            parts.get(1).unwrap_or(&"")
+                        );
                         continue;
                     }
                     for (notice_type_str, type_name) in query_types {
@@ -116,28 +146,78 @@ impl NoticeCommand {
                                         match notice_type {
                                             NoticeType::Point => {
                                                 let point = NoticePoint::from(notice);
-                                                let status = if point.has_read { "已读".green() } else { "未读".red().bold() };
-                                                println!("  {}. [{}] {} {}", i + 1, status, point.create_time.cyan(), strip_html_tags(&point.description));
+                                                let status = if point.has_read {
+                                                    "已读".green()
+                                                } else {
+                                                    "未读".red().bold()
+                                                };
+                                                println!(
+                                                    "  {}. [{}] {} {}",
+                                                    i + 1,
+                                                    status,
+                                                    point.create_time.cyan(),
+                                                    strip_html_tags(&point.description)
+                                                );
                                             }
                                             NoticeType::Commented => {
                                                 let comment = NoticeComment::from(notice);
-                                                let status = if comment.has_read { "已读".green() } else { "未读".red().bold() };
-                                                println!("  {}. [{}] {} {}", i + 1, status, comment.create_time.cyan(), strip_html_tags(&comment.content));
+                                                let status = if comment.has_read {
+                                                    "已读".green()
+                                                } else {
+                                                    "未读".red().bold()
+                                                };
+                                                println!(
+                                                    "  {}. [{}] {} {}",
+                                                    i + 1,
+                                                    status,
+                                                    comment.create_time.cyan(),
+                                                    strip_html_tags(&comment.content)
+                                                );
                                             }
                                             NoticeType::At => {
                                                 let at = NoticeAt::from(notice);
-                                                let status = if at.has_read { "已读".green() } else { "未读".red().bold() };
-                                                println!("  {}. [{}] {} {}", i + 1, status, at.create_time.cyan(), strip_html_tags(&at.content));
+                                                let status = if at.has_read {
+                                                    "已读".green()
+                                                } else {
+                                                    "未读".red().bold()
+                                                };
+                                                println!(
+                                                    "  {}. [{}] {} {}",
+                                                    i + 1,
+                                                    status,
+                                                    at.create_time.cyan(),
+                                                    strip_html_tags(&at.content)
+                                                );
                                             }
                                             NoticeType::Following => {
                                                 let follow = NoticeFollow::from(notice);
-                                                let status = if follow.has_read { "已读".green() } else { "未读".red().bold() };
-                                                println!("  {}. [{}] {} {}", i + 1, status, follow.create_time.cyan(), follow.title.yellow());
+                                                let status = if follow.has_read {
+                                                    "已读".green()
+                                                } else {
+                                                    "未读".red().bold()
+                                                };
+                                                println!(
+                                                    "  {}. [{}] {} {}",
+                                                    i + 1,
+                                                    status,
+                                                    follow.create_time.cyan(),
+                                                    follow.title.yellow()
+                                                );
                                             }
                                             NoticeType::System => {
                                                 let sys = NoticeSystem::from(notice);
-                                                let status = if sys.has_read { "已读".green() } else { "未读".red().bold() };
-                                                println!("  {}. [{}] {} {}", i + 1, status, sys.create_time.cyan(), sys.description.yellow());
+                                                let status = if sys.has_read {
+                                                    "已读".green()
+                                                } else {
+                                                    "未读".red().bold()
+                                                };
+                                                println!(
+                                                    "  {}. [{}] {} {}",
+                                                    i + 1,
+                                                    status,
+                                                    sys.create_time.cyan(),
+                                                    sys.description.yellow()
+                                                );
                                             }
                                             _ => {
                                                 println!("  {}. [未知类型] {:?}", i + 1, notice);
@@ -148,7 +228,11 @@ impl NoticeCommand {
                                     println!("{}", "暂无通知".yellow());
                                 }
                             } else {
-                                println!("{}: {}", "获取通知失败".red(), result.message.unwrap_or_else(|| "未知错误".to_string()));
+                                println!(
+                                    "{}: {}",
+                                    "获取通知失败".red(),
+                                    result.message.unwrap_or_else(|| "未知错误".to_string())
+                                );
                             }
                         }
                     }
@@ -168,7 +252,11 @@ impl NoticeCommand {
                         if result.success {
                             println!("{}", "通知已标记为已读".green());
                         } else {
-                            println!("{}: {}", "标记失败".red(), result.message.unwrap_or_else(|| "未知错误".to_string()));
+                            println!(
+                                "{}: {}",
+                                "标记失败".red(),
+                                result.message.unwrap_or_else(|| "未知错误".to_string())
+                            );
                         }
                     } else {
                         println!("{}: {}", "无效的通知类型".red(), notice_type_str);
@@ -181,7 +269,11 @@ impl NoticeCommand {
                     if result.success {
                         println!("{}", "所有通知已标记为已读".green());
                     } else {
-                        println!("{}: {}", "标记失败".red(), result.message.unwrap_or_else(|| "未知错误".to_string()));
+                        println!(
+                            "{}: {}",
+                            "标记失败".red(),
+                            result.message.unwrap_or_else(|| "未知错误".to_string())
+                        );
                     }
                 }
                 ":unread" => {
@@ -198,10 +290,21 @@ impl NoticeCommand {
                             println!("  系统通知: {}", count.sys_announce.to_string().yellow());
                             println!("  同城通知: {}", count.broadcast.to_string().yellow());
                             println!("  未读总计: {}", count.count.to_string().red().bold());
-                            println!("  通知状态: {}", if count.notify_status { "已启用".green() } else { "已禁用".red() });
+                            println!(
+                                "  通知状态: {}",
+                                if count.notify_status {
+                                    "已启用".green()
+                                } else {
+                                    "已禁用".red()
+                                }
+                            );
                         }
                     } else {
-                        println!("{}: {}", "获取通知统计失败".red(), result.message.unwrap_or_else(|| "未知错误".to_string()));
+                        println!(
+                            "{}: {}",
+                            "获取通知统计失败".red(),
+                            result.message.unwrap_or_else(|| "未知错误".to_string())
+                        );
                     }
                 }
                 _ => {

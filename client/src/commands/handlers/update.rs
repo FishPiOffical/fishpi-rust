@@ -1,11 +1,11 @@
+use crate::commands::{Command as CCommand, CommandContext, CommandResult};
 use anyhow::Result;
+use async_trait::async_trait;
 use reqwest::Client;
 use std::env;
 use std::fs;
 use std::io::Write;
 use std::process::Command;
-use async_trait::async_trait;
-use crate::commands::{Command as CCommand, CommandContext, CommandResult};
 
 #[allow(dead_code)]
 pub struct UpdateCommand {
@@ -27,30 +27,36 @@ impl UpdateCommand {
             .await?
             .json::<serde_json::Value>()
             .await?;
-    
+
         let tag = resp["tag_name"].as_str().unwrap_or("").to_string();
-    
+
         let asset_name = match std::env::consts::OS {
             "windows" => "client-windows.exe",
             "linux" => "client-linux",
             "macos" => "client-macos",
             _ => return Err(anyhow::anyhow!("不支持的操作系统")),
         };
-    
+
         let empty_vec = vec![];
         let assets = resp["assets"].as_array().unwrap_or(&empty_vec);
         let mut asset_url = String::new();
         for asset in assets {
             if asset["name"].as_str().unwrap_or("") == asset_name {
-                asset_url = asset["browser_download_url"].as_str().unwrap_or("").to_string();
+                asset_url = asset["browser_download_url"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_string();
                 break;
             }
         }
-    
+
         if asset_url.is_empty() {
-            return Err(anyhow::anyhow!(format!("未找到 {} 的可执行文件", asset_name)));
+            return Err(anyhow::anyhow!(format!(
+                "未找到 {} 的可执行文件",
+                asset_name
+            )));
         }
-    
+
         Ok((tag, asset_url))
     }
 
@@ -86,9 +92,7 @@ del "%~f0"
             let script_path = format!("{}.update.bat", exe_path);
             let mut file = fs::File::create(&script_path)?;
             file.write_all(script.as_bytes())?;
-            Command::new("cmd")
-                .args(&["/C", &script_path])
-                .spawn()?;
+            Command::new("cmd").args(&["/C", &script_path]).spawn()?;
         }
         #[cfg(any(target_os = "linux", target_os = "macos"))]
         {
@@ -106,9 +110,7 @@ chmod +x "{old}"
             let script_path = format!("{}.update.sh", exe_path);
             let mut file = fs::File::create(&script_path)?;
             file.write_all(script.as_bytes())?;
-            Command::new("sh")
-                .arg(&script_path)
-                .spawn()?;
+            Command::new("sh").arg(&script_path).spawn()?;
         }
         Ok(())
     }

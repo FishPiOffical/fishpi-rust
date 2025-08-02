@@ -5,12 +5,7 @@ use fishpi_rust::FishPi;
 pub mod handlers;
 pub mod registry;
 use crate::commands::handlers::{
-    ArticleCommand,
-    NoticeCommand,
-    BreezemoonCommand,
-    ChatCommand,
-    ChatroomCommand,
-    UpdateCommand,
+    ArticleCommand, BreezemoonCommand, ChatCommand, ChatroomCommand, NoticeCommand, UpdateCommand,
 };
 use colored::*;
 pub use registry::CommandRegistry;

@@ -59,10 +59,7 @@ impl ArticleCommand {
             );
             let prompt = format!("{}", "看帖> ".green().bold());
 
-            if let Some(input) = input_handler
-                .start_input_loop(&prompt)
-                .await?
-            {
+            if let Some(input) = input_handler.start_input_loop(&prompt).await? {
                 let input = input.trim();
 
                 if let Some(target_mode) = self.context.is_switch_command(input) {

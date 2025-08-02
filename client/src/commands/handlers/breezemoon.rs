@@ -1,10 +1,13 @@
+use crate::commands::{Command, CommandContext, CommandResult};
+use crate::ui::{CommandItem, CrosstermInputHandler};
+use crate::utils::strip_html_tags;
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::*;
-use crossterm::{cursor, execute, terminal::{Clear, ClearType}};
-use crate::ui::{CrosstermInputHandler, CommandItem};
-use crate::commands::{Command, CommandContext, CommandResult};
-use crate::utils::strip_html_tags;
+use crossterm::{
+    cursor, execute,
+    terminal::{Clear, ClearType},
+};
 
 pub struct BreezemoonCommand {
     context: CommandContext,
@@ -39,11 +42,26 @@ impl BreezemoonCommand {
     async fn breezemoon_loop(&self) -> Result<()> {
         let mut input_handler = CrosstermInputHandler::new();
         input_handler.set_commands(vec![
-            CommandItem { name: ":list", desc: "显示清风明月列表" },
-            CommandItem { name: ":post", desc: "发布清风明月" },
-            CommandItem { name: ":cls", desc: "清屏" },
-            CommandItem { name: ":q", desc: "退出" },
-            CommandItem { name: ":help", desc: "帮助" },
+            CommandItem {
+                name: ":list",
+                desc: "显示清风明月列表",
+            },
+            CommandItem {
+                name: ":post",
+                desc: "发布清风明月",
+            },
+            CommandItem {
+                name: ":cls",
+                desc: "清屏",
+            },
+            CommandItem {
+                name: ":q",
+                desc: "退出",
+            },
+            CommandItem {
+                name: ":help",
+                desc: "帮助",
+            },
         ]);
 
         println!(
@@ -78,7 +96,11 @@ impl BreezemoonCommand {
                     break;
                 }
                 ":cls" | ":clear" => {
-                    execute!(std::io::stdout(), Clear(ClearType::All), cursor::MoveTo(0, 0))?;
+                    execute!(
+                        std::io::stdout(),
+                        Clear(ClearType::All),
+                        cursor::MoveTo(0, 0)
+                    )?;
                     continue;
                 }
                 ":help" => {

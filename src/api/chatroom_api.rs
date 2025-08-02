@@ -291,7 +291,7 @@ impl ChatroomApi {
             .client
             .get_html(&format!("/cr/raw/{}", oid), Some(params))
             .await?;
-        
+
         let re = Regex::new(r"^(.*?)\r\n\n").unwrap();
         if let Some(caps) = re.captures(&response) {
             if let Some(matched) = caps.get(1) {

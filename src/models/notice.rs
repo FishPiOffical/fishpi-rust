@@ -588,7 +588,6 @@ pub struct NoticeMsg {
     pub sender_user_name: Option<String>,
 }
 
-
 impl From<&Value> for NoticeMsg {
     fn from(data: &Value) -> Self {
         Self {
