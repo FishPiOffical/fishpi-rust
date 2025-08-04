@@ -5,6 +5,53 @@ pub use auth::AuthService;
 use chrono::{Local, TimeZone};
 use colored::*;
 use regex::Regex;
+use std::sync::{Arc, Mutex};
+use once_cell::sync::Lazy;
+use std::fs;
+use std::path::Path;
+use serde::{Serialize, Deserialize};
+
+const GESTURE_STATS_FILE: &str = "gesture_stats.json";
+
+#[derive(Serialize, Deserialize)]
+struct GestureStats([u64; 3]);
+
+pub fn save_gesture_stats(stats: &[u64; 3]) {
+    let data = GestureStats(*stats);
+    if let Ok(json) = serde_json::to_string(&data) {
+        let _ = fs::write(GESTURE_STATS_FILE, json);
+    }
+}
+
+pub fn load_gesture_stats() -> [u64; 3] {
+    if Path::new(GESTURE_STATS_FILE).exists() {
+        if let Ok(json) = fs::read_to_string(GESTURE_STATS_FILE) {
+            if let Ok(data) = serde_json::from_str::<GestureStats>(&json) {
+                return data.0;
+            }
+        }
+    }
+    [0; 3]
+}
+
+pub static GESTURE_STATS: Lazy<Arc<Mutex<[u64; 3]>>> = Lazy::new(|| {
+    Arc::new(Mutex::new(load_gesture_stats()))
+});
+
+//随机猜拳
+pub fn random_gesture() -> u8 {
+    let rand_u32: u32 = rand::random();
+    let rand_f64 = rand_u32 as f64 / 4294967296.0;
+    let gesture = (rand_f64 * 3.0).floor() as u8;
+    {
+        let mut stats = GESTURE_STATS.lock().unwrap();
+        if (gesture as usize) < 3 {
+            stats[gesture as usize] += 1;
+            save_gesture_stats(&*stats);
+        }
+    }
+    gesture
+}
 
 pub fn strip_html_tags(html: &str) -> String {
     let re = Regex::new(r"<[^>]+>").unwrap();

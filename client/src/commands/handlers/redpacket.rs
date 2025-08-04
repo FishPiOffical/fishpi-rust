@@ -5,6 +5,7 @@ use colored::*;
 use fishpi_rust::{GestureType, RedPacketMessage, RedPacketType};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use crate::utils::random_gesture;
 
 pub struct RedpacketCommand {
     context: CommandContext,
@@ -66,8 +67,8 @@ impl RedpacketCommand {
 
         // 只提供了红包ID，则随机生成一个手势
         let gesture = if args.len() == 1 {
-            let rand_num = rand::random_range(0..=2);
-            match rand_num {
+            // let rand_num = random_gesture();
+            match random_gesture() {
                 0 => GestureType::Rock,
                 1 => GestureType::Scissors,
                 _ => GestureType::Paper,
@@ -383,7 +384,7 @@ impl RedpacketCommand {
         match args.len() {
             0 => {
                 // 不给参数， 积分32 手势随机
-                let gesture = match rand::random_range(0..=2) {
+                let gesture = match random_gesture() {
                     0 => GestureType::Rock,
                     1 => GestureType::Scissors,
                     _ => GestureType::Paper,
@@ -408,7 +409,7 @@ impl RedpacketCommand {
             1 => {
                 // 只给了一个参数，手势随机
                 let money: i32 = args[0].parse().unwrap_or(default_money);
-                let gesture = match rand::random_range(0..=2) {
+                let gesture = match random_gesture() {
                     0 => GestureType::Rock,
                     1 => GestureType::Scissors,
                     _ => GestureType::Paper,
@@ -433,7 +434,7 @@ impl RedpacketCommand {
             2 => {
                 // 两个参数，手势随机，第二个参数msg
                 let money: i32 = args[0].parse().unwrap_or(default_money);
-                let gesture = match rand::random_range(0..=2) {
+                let gesture = match random_gesture() {
                     0 => GestureType::Rock,
                     1 => GestureType::Scissors,
                     2 => GestureType::Paper,
@@ -508,13 +509,13 @@ impl RedpacketCommand {
     async fn handle_list_command(&self) -> Result<()> {
         let cache = self.redpacket_cache.lock().unwrap();
         if cache.is_empty() {
-            println!("{}", "当前没有可领取的红包".yellow());
+            println!("\r{}", "当前没有可领取的红包".yellow());
         } else {
-            println!("{}", "当前可领取的红包:".bold());
+            println!("\r{}", "当前可领取的红包:".bold());
             for (id, info) in cache.iter().enumerate() {
                 let type_name = RedPacketType::to_name(&info.1.type_);
                 println!(
-                    "  {}. {} [{}] {} 个, 共 {} 积分, 已领取 {}/{}",
+                    "\r  {}. {} [{}] {} 个, 共 {} 积分, 已领取 {}/{}",
                     id + 1,
                     info.0.bright_black(),
                     type_name.red(),
@@ -531,7 +532,7 @@ impl RedpacketCommand {
     /// 自动打开红包
     async fn handle_auto_open_command(&self) -> Result<()> {
         if self.redpacket_cache.lock().unwrap().is_empty() {
-            println!("{}", "当前没有可领取的红包".yellow());
+            println!("\r{}", "当前没有可领取的红包".yellow());
             return Ok(());
         }
         let oids: Vec<(String, RedPacketMessage)> = {
@@ -544,7 +545,7 @@ impl RedpacketCommand {
         for (id, msg) in oids {
             if msg.type_ == RedPacketType::ROCK_PAPER_SCISSORS {
                 // 随机生成一个手势
-                let gesture = match rand::random_range(0..=2) {
+                let gesture = match random_gesture() {
                     0 => GestureType::Rock,
                     1 => GestureType::Scissors,
                     _ => GestureType::Paper,
@@ -576,13 +577,13 @@ impl RedpacketCommand {
                     let user_name = self.context.auth.get_user_name().await?;
                     if let Some(got) = info.who.iter().find(|got| got.user_name == user_name) {
                         println!(
-                            "你领取了 {} 积分 {} / {}",
+                            "\r你领取了 {} 积分 {} / {}",
                             got.money.to_string().yellow().bold(),
                             info.info.got.to_string().cyan(),
                             info.info.count.to_string().cyan()
                         );
                     } else {
-                        println!("{}", "红包已领完".yellow());
+                        println!("\r{}", "红包已领完".yellow());
                     }
                 }
             }

@@ -82,6 +82,7 @@ impl Command for ChatroomCommand {
             :q             - 退出
             :rp            - 红包
             :bl            - 消息屏蔽/过滤
+            :rw            - 查看自动猜拳分布
         "#
     }
 }
@@ -154,6 +155,10 @@ impl ChatroomCommand {
                 name: ":bl",
                 desc: "消息屏蔽/过滤",
             },
+            CommandItem {
+                name: ":rw",
+                desc: "查看自动猜拳分布",
+            },
         ]);
 
         let prompt = format!("{}", "聊天室> ".green().bold());
@@ -187,6 +192,31 @@ impl ChatroomCommand {
                         ":help" => {
                             println!("{}", self.help().green());
                             self.context.show_switch_help();
+                        }
+                        ":rw" => {
+                            let stats = crate::utils::GESTURE_STATS.lock().unwrap();
+                            let total: u64 = stats.iter().sum();
+                            if total == 0 {
+                                println!("石头: {}, 剪刀: {}, 布: {}，总数: 0", stats[0], stats[1], stats[2]);
+                            } else {
+                                let rock_pct = stats[0] as f64 / total as f64 * 100.0;
+                                let scissors_pct = stats[1] as f64 / total as f64 * 100.0;
+                                let paper_pct = stats[2] as f64 / total as f64 * 100.0;
+                                println!(
+                                    "{}: {:>5} ({:>6.2}%)\n{}: {:>5} ({:>6.2}%)\n{}: {:>7} ({:>6.2}%)\n{}: {}",
+                                    "石头".yellow(),
+                                    stats[0],
+                                    rock_pct,
+                                    "剪刀".yellow(),
+                                    stats[1],
+                                    scissors_pct,
+                                    "布".yellow(),
+                                    stats[2],
+                                    paper_pct,
+                                    "总数".magenta(),
+                                    total
+                                );
+                            }
                         }
                         cmd if cmd.starts_with(":history") || cmd.starts_with(":h") => {
                             let parts: Vec<&str> = cmd.split_whitespace().collect();
