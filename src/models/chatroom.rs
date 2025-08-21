@@ -1001,6 +1001,22 @@ pub struct ChatRoomNodeInfo {
     pub avaliable: Vec<ChatRoomNode>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AutoCompleteUsername {
+    #[serde(rename = "userNameLowerCase")]
+    pub username_lowercase: String,
+    #[serde(rename = "userAvatarURL")]
+    pub useravatar_url: String,
+    #[serde(rename = "userAvatarURL20")]
+    pub uservatar_url20: String,
+    #[serde(rename = "userName")]
+    pub user_name: String,
+    #[serde(rename = "userAvatarURL210")]
+    pub uservatar_url210: String,
+    #[serde(rename = "userAvatarURL48")]
+    pub uservatar_url48: String,
+}
+
 // 聊天室数据类型
 #[derive(Debug, Clone)]
 pub struct ChatRoomData {

@@ -1,5 +1,7 @@
+use crate::commands::CommandContext;
 use colored::*;
-use fishpi_rust::ChatRoomUser;
+use fishpi_rust::api::ChatroomApi;
+use once_cell::sync::OnceCell;
 use rustyline::completion::{Completer, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
@@ -9,7 +11,8 @@ use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Context, Helper};
 use std::io;
-use std::sync::{Arc, Mutex};
+
+pub static GLOBAL_COMMAND_CONTEXT: OnceCell<CommandContext> = OnceCell::new();
 
 pub struct CommandItem {
     pub name: &'static str,
@@ -19,15 +22,11 @@ pub struct CommandItem {
 /// 命令补全器
 pub struct CommandCompleter {
     pub commands: Vec<CommandItem>,
-    pub users: Arc<Mutex<Vec<ChatRoomUser>>>,
 }
 
 impl CommandCompleter {
     fn new() -> Self {
-        Self {
-            commands: vec![],
-            users: Arc::new(Mutex::new(vec![])),
-        }
+        Self { commands: vec![] }
     }
 
     fn set_commands(&mut self, commands: Vec<CommandItem>) {
@@ -77,21 +76,33 @@ impl Completer for CommandCompleter {
         // @用户名补全
         if let Some(at_pos) = line[..pos].rfind('@') {
             let prefix = &line[at_pos + 1..pos];
-            let users = self.users.lock().unwrap();
-            let candidates: Vec<Pair> = users
-                .iter()
-                .filter(|user| {
-                    user.user_name
-                        .to_lowercase()
-                        .starts_with(&prefix.to_lowercase())
-                })
-                .map(|user| Pair {
-                    display: format!("@{}", user.user_name.cyan()),
-                    replacement: user.user_name.clone(),
-                })
-                .collect();
+            if !prefix.is_empty() {
+                if let Some(ctx) = GLOBAL_COMMAND_CONTEXT.get() {
+                    let prefix_owned = prefix.to_string();
+                    let ctx_clone = ctx.clone();
+                    let candidates = std::thread::scope(|s| {
+                        let handle = s.spawn(move || {
+                            let rt = tokio::runtime::Runtime::new().unwrap();
+                            rt.block_on(async move {
+                                let api = ChatroomApi::new(ctx_clone.client.api_client.clone());
+                                match api.autocomplete_username(&prefix_owned).await {
+                                    Ok(api_users) => api_users
+                                        .into_iter()
+                                        .map(|u| Pair {
+                                            display: format!("@{}", u.user_name.cyan()),
+                                            replacement: u.user_name,
+                                        })
+                                        .collect(),
+                                    Err(_) => vec![],
+                                }
+                            })
+                        });
+                        handle.join().unwrap_or_else(|_| vec![])
+                    });
 
-            return Ok((at_pos + 1, candidates));
+                    return Ok((at_pos + 1, candidates));
+                }
+            }
         }
 
         if line.trim().is_empty() {

@@ -65,10 +65,10 @@ pub mod services;
 
 // 导出常用类型到顶层命名空间
 pub use models::chatroom::{
-    BarrageCost, BarragerMsg, ChatContentType, ChatRoomData, ChatRoomDataContent, ChatRoomMessage,
-    ChatRoomMessageType, ChatRoomNode, ChatRoomNodeInfo, ChatRoomQueryMode, ChatRoomUser,
-    ChatSource, MusicMsg, MuteItem, SpecialMessageContent, WeatherMsg, WeatherMsgData,
-    WebSocketMessage,
+    AutoCompleteUsername, BarrageCost, BarragerMsg, ChatContentType, ChatRoomData,
+    ChatRoomDataContent, ChatRoomMessage, ChatRoomMessageType, ChatRoomNode, ChatRoomNodeInfo,
+    ChatRoomQueryMode, ChatRoomUser, ChatSource, MusicMsg, MuteItem, SpecialMessageContent,
+    WeatherMsg, WeatherMsgData, WebSocketMessage,
 };
 
 pub use models::chat::{
@@ -110,7 +110,7 @@ use api::{
 /// FishPi API 客户端主类
 #[derive(Debug, Clone)]
 pub struct FishPi {
-    api_client: ApiClient,
+    pub api_client: ApiClient,
     pub user: UserService,
     pub chatroom: ChatroomService,
     pub redpacket: RedpacketService,

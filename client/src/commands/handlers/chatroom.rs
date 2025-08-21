@@ -18,7 +18,7 @@ use crossterm::{
     cursor, execute,
     terminal::{Clear, ClearType},
 };
-use fishpi_rust::{ChatRoomDataContent, ChatRoomMessage, ChatRoomUser, GestureType, RedPacketType};
+use fishpi_rust::{ChatRoomDataContent, ChatRoomMessage, GestureType, RedPacketType};
 use lru::LruCache;
 use std::borrow::Cow;
 use std::io::{self, Write};
@@ -26,7 +26,6 @@ use std::sync::{Arc, Mutex};
 
 pub struct ChatroomCommand {
     context: CommandContext,
-    online_users: Arc<Mutex<Vec<ChatRoomUser>>>,
     redpacket_handler: RedpacketCommand,
     filter_handler: FilterCommand,
     message_cache: Arc<Mutex<LruCache<String, ChatRoomMessage>>>,
@@ -36,7 +35,6 @@ impl ChatroomCommand {
     pub fn new(context: CommandContext) -> Self {
         Self {
             context: context.clone(),
-            online_users: Arc::new(Mutex::new(vec![])),
             redpacket_handler: RedpacketCommand::new(context),
             filter_handler: FilterCommand::new(),
             message_cache: Arc::new(Mutex::new(LruCache::new(
@@ -89,10 +87,7 @@ impl Command for ChatroomCommand {
 
 impl ChatroomCommand {
     async fn chatroom_loop(&self) -> Result<()> {
-        let completer = CommandCompleter {
-            commands: vec![],
-            users: Arc::clone(&self.online_users),
-        };
+        let completer = CommandCompleter { commands: vec![] };
         let mut input_handler = CrosstermInputHandler::with_completer(completer);
         input_handler.set_commands(vec![
             CommandItem {
@@ -197,7 +192,10 @@ impl ChatroomCommand {
                             let stats = crate::utils::GESTURE_STATS.lock().unwrap();
                             let total: u64 = stats.iter().sum();
                             if total == 0 {
-                                println!("石头: {}, 剪刀: {}, 布: {}，总数: 0", stats[0], stats[1], stats[2]);
+                                println!(
+                                    "石头: {}, 剪刀: {}, 布: {}，总数: 0",
+                                    stats[0], stats[1], stats[2]
+                                );
                             } else {
                                 let rock_pct = stats[0] as f64 / total as f64 * 100.0;
                                 let scissors_pct = stats[1] as f64 / total as f64 * 100.0;
@@ -335,7 +333,6 @@ impl ChatroomCommand {
     }
 
     async fn register_message_handler(&self) -> Result<()> {
-        let online_users = Arc::clone(&self.online_users);
         let auth = Arc::clone(&self.context.auth);
         let client = Arc::clone(&self.context.client);
         let redpacket_cache = Arc::clone(&self.redpacket_handler.redpacket_cache);
@@ -348,7 +345,6 @@ impl ChatroomCommand {
             .client
             .chatroom
             .add_listener(move |data| {
-                let online_users = Arc::clone(&online_users);
                 let auth = Arc::clone(&auth);
                 let client = Arc::clone(&client);
                 let redpacket_cache = Arc::clone(&redpacket_cache);
@@ -491,11 +487,7 @@ impl ChatroomCommand {
                         ChatRoomDataContent::Custom(custom) => {
                             println!("\r[{}]", custom.cyan());
                         }
-                        ChatRoomDataContent::OnlineUsers(online_user, ..) => {
-                            if let Ok(mut users) = online_users.lock() {
-                                *users = online_user;
-                            }
-                        }
+                        ChatRoomDataContent::OnlineUsers(..) => {}
                         ChatRoomDataContent::Discuss(topic) => {
                             println!("\r{}: {}", "💬 话题变更".yellow().bold(), topic.yellow());
                         }

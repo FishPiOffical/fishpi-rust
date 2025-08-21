@@ -1,7 +1,7 @@
 use crate::api::client::ApiClient;
 use crate::models::chatroom::{
-    BarrageCost, ChatRoomMessage, ChatRoomNode, ChatRoomNodeInfo, ChatRoomQueryMode, ChatSource,
-    MuteItem,
+    AutoCompleteUsername, BarrageCost, ChatRoomMessage, ChatRoomNode, ChatRoomNodeInfo,
+    ChatRoomQueryMode, ChatSource, MuteItem,
 };
 use crate::models::user::ApiResponse;
 use anyhow::{Result, anyhow};
@@ -379,5 +379,23 @@ impl ChatroomApi {
             recommend,
             avaliable,
         })
+    }
+
+    /// 用户名补全接口
+    ///
+    /// 返回用户名 Vec<AutoCompleteUsername>
+    pub async fn autocomplete_username(&self, prefix: &str) -> Result<Vec<AutoCompleteUsername>> {
+        let token = self.check_token("用户名补全").await?;
+        let params = self.build_params(HashMap::new(), token);
+        let data = json!({ "name": prefix });
+        let response = self
+            .client
+            .post::<ApiResponse<Vec<AutoCompleteUsername>>>("/users/names", Some(params), data)
+            .await?;
+        // 失败返回空列表
+        if response.code != 0 || response.data.is_none() {
+            return Err(anyhow!("获取用户名失败"));
+        }
+        Ok(response.data.unwrap_or_default())
     }
 }

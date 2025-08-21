@@ -4,12 +4,12 @@ pub use auth::AuthService;
 
 use chrono::{Local, TimeZone};
 use colored::*;
-use regex::Regex;
-use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use serde::{Serialize, Deserialize};
+use std::sync::{Arc, Mutex};
 
 const GESTURE_STATS_FILE: &str = "gesture_stats.json";
 
@@ -34,9 +34,8 @@ pub fn load_gesture_stats() -> [u64; 3] {
     [0; 3]
 }
 
-pub static GESTURE_STATS: Lazy<Arc<Mutex<[u64; 3]>>> = Lazy::new(|| {
-    Arc::new(Mutex::new(load_gesture_stats()))
-});
+pub static GESTURE_STATS: Lazy<Arc<Mutex<[u64; 3]>>> =
+    Lazy::new(|| Arc::new(Mutex::new(load_gesture_stats())));
 
 //随机猜拳
 pub fn random_gesture() -> u8 {

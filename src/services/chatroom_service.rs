@@ -1,3 +1,4 @@
+use crate::AutoCompleteUsername;
 use crate::api::ChatroomApi;
 use crate::api::client::ApiClient;
 use crate::models::chatroom::{
@@ -124,6 +125,14 @@ impl ChatroomService {
             let mut retries = self.retry_times.lock().await;
             *retries = 0;
         }
+    }
+
+    /// 用户名补全
+    pub async fn autocomplete(&self, prefix: &str) -> Response<Vec<AutoCompleteUsername>> {
+        self.call_api("用户名补全", || {
+            self.chatroom_api.autocomplete_username(prefix)
+        })
+        .await
     }
 
     /// 发送消息

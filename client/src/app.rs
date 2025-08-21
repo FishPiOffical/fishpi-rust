@@ -4,7 +4,7 @@ use fishpi_rust::FishPi;
 use std::sync::Arc;
 
 use crate::commands::{CommandContext, CommandRegistry};
-use crate::ui::CrosstermInputHandler;
+use crate::ui::{CrosstermInputHandler, GLOBAL_COMMAND_CONTEXT};
 use crate::utils::AuthService;
 
 pub struct App {
@@ -161,6 +161,7 @@ impl App {
 
     async fn main_loop(&mut self) -> Result<()> {
         let context = CommandContext::new((*self.client).clone());
+        GLOBAL_COMMAND_CONTEXT.set(context.clone()).ok();
 
         loop {
             match self

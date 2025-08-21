@@ -1,11 +1,11 @@
 use crate::commands::{Command, CommandContext, CommandResult};
+use crate::utils::random_gesture;
 use anyhow::Result;
 use async_trait::async_trait;
 use colored::*;
 use fishpi_rust::{GestureType, RedPacketMessage, RedPacketType};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use crate::utils::random_gesture;
 
 pub struct RedpacketCommand {
     context: CommandContext,
