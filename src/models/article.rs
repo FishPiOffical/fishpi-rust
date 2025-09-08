@@ -281,6 +281,7 @@ pub struct ArticleAuthor {
 
     /// 用户头像类型
     #[serde(rename = "userAvatarType", default)]
+    #[serde(deserialize_with = "deserialize_string_or_int_to_i32")]
     pub avatar_type: i32,
 
     /// 用户确认邮件发送时间
@@ -612,6 +613,28 @@ pub struct ArticleComment {
     /// 分页当前页码
     #[serde(rename = "paginationCurrentPageNum", default)]
     pub pagination_current_page_num: i32,
+}
+
+fn deserialize_string_or_int_to_i32<'de, D>(deserializer: D) -> Result<i32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::Number(n) => {
+            n.as_i64()
+                .ok_or_else(|| serde::de::Error::custom("Invalid number"))?
+                .try_into()
+                .map_err(|_| serde::de::Error::custom("Number out of range"))
+        }
+        serde_json::Value::String(s) => {
+            s.parse::<i32>()
+                .map_err(|_| serde::de::Error::custom(format!("Cannot parse '{}' as i32", s)))
+        }
+        // 默认值 0
+        serde_json::Value::Null => Ok(0),
+        _ => Err(serde::de::Error::custom("Expected number or string")),
+    }
 }
 
 fn deserialize_score<'de, D>(deserializer: D) -> Result<f64, D::Error>

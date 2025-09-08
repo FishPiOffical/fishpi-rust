@@ -92,7 +92,7 @@ del "%~f0"
             let script_path = format!("{}.update.bat", exe_path);
             let mut file = fs::File::create(&script_path)?;
             file.write_all(script.as_bytes())?;
-            Command::new("cmd").args(&["/C", &script_path]).spawn()?;
+            Command::new("cmd").args(["/C", &script_path]).spawn()?;
         }
         #[cfg(any(target_os = "linux", target_os = "macos"))]
         {

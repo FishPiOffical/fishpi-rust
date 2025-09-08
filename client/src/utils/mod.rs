@@ -46,7 +46,7 @@ pub fn random_gesture() -> u8 {
         let mut stats = GESTURE_STATS.lock().unwrap();
         if (gesture as usize) < 3 {
             stats[gesture as usize] += 1;
-            save_gesture_stats(&*stats);
+            save_gesture_stats(&stats);
         }
     }
     gesture
