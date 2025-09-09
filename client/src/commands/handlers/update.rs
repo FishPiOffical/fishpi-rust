@@ -120,19 +120,35 @@ chmod +x "{old}"
 impl CCommand for UpdateCommand {
     async fn execute(&mut self, _args: &[&str]) -> Result<CommandResult> {
         println!("正在检查新版本...");
-        let (latest_tag, asset_url) = self.get_latest_release().await?;
-        let latest_tag_clean = latest_tag.trim().trim_start_matches('v');
-        let current_version = env!("GIT_TAG").trim().trim_start_matches('v');
-        if latest_tag_clean == current_version {
-            println!("已是最新版本。");
-            return Ok(CommandResult::Success);
+        
+        match self.get_latest_release().await {
+            Ok((latest_tag, asset_url)) => {
+                let latest_tag_clean = latest_tag.trim().trim_start_matches('v');
+                let current_version = env!("GIT_TAG").trim().trim_start_matches('v');
+
+                if latest_tag_clean == current_version {
+                    println!("已是最新版本。");
+                    return Ok(CommandResult::Success);
+                }
+                
+                println!(
+                    "检测到新版本: v{}，当前版本: v{}",
+                    latest_tag_clean, current_version
+                );
+                
+                match self.download_and_replace(&asset_url).await {
+                    Ok(_) => Ok(CommandResult::Success),
+                    Err(e) => {
+                        println!("更新失败: {}", e);
+                        Ok(CommandResult::Success)
+                    }
+                }
+            }
+            Err(e) => {
+                println!("检查新版本失败: {}", e);
+                Ok(CommandResult::Success)
+            }
         }
-        println!(
-            "检测到新版本: v{}，当前版本: v{}",
-            latest_tag_clean, current_version
-        );
-        self.download_and_replace(&asset_url).await?;
-        Ok(CommandResult::Success)
     }
 
     fn help(&self) -> &'static str {
