@@ -125,7 +125,7 @@ impl NoticeCommand {
                         let t = parts[1];
                         types.iter().cloned().filter(|(key, _)| *key == t).collect()
                     } else {
-                        types.iter().cloned().collect()
+                        types.to_vec()
                     };
                     if query_types.is_empty() {
                         println!(

@@ -91,7 +91,7 @@ impl App {
                         }
                     })
                     .await;
-                notice_service.connect(None).await;
+                // notice_service.connect(None).await;
 
                 return Ok(true);
             }
@@ -202,6 +202,15 @@ impl App {
                             match self.command_registry.execute(&context, "chat", &[]).await {
                                 Ok(_) => {}
                                 Err(e) => println!("进入私聊失败: {}", e),
+                            }
+                        }
+                        ":n" | ":notice" => {
+                            if !self.client.notice.is_connected().await {
+                                self.client.notice.connect(None).await;
+                            }
+                            match self.command_registry.execute(&context, "notice", &[]).await {
+                                Ok(_) => {}
+                                Err(e) => println!("进入通知失败: {}", e),
                             }
                         }
                         "help" | "h" => {

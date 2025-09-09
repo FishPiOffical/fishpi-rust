@@ -744,8 +744,8 @@ impl ChatroomCommand {
                 println!("消息原文:");
                 println!("{}", raw_content.cyan());
             }
-            Err(e) => {
-                println!("{}: {}", "获取消息原文失败".red(), e.to_string());
+            Err(_) => {
+                println!("{}", "获取消息原文失败".red());
             }
         }
     }

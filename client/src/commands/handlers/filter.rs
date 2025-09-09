@@ -147,12 +147,10 @@ impl FilterCommand {
                     } else {
                         println!("{}", "编号无效".red());
                     }
+                } else if cfg.remove_regex(&re) {
+                    println!("{}", format!("已移除屏蔽正则：{}", re).yellow());
                 } else {
-                    if cfg.remove_regex(&re) {
-                        println!("{}", format!("已移除屏蔽正则：{}", re).yellow());
-                    } else {
-                        println!("{}", "未找到该正则".red());
-                    }
+                    println!("{}", "未找到该正则".red());
                 }
             }
             ["list"] | ["l"] => {

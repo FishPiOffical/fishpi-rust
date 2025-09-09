@@ -32,7 +32,7 @@ impl Command for ChatCommand {
                     self.show_contacts_and_select().await?;
                 }
                 _ => {
-                    if self.context.handle_switch_command(&username).await {
+                    if self.context.handle_switch_command(username).await {
                         return Ok(CommandResult::Success);
                     }
                     self.start_chat_with_user(username).await?;
@@ -41,7 +41,6 @@ impl Command for ChatCommand {
         } else {
             self.show_contacts_and_select().await?;
         }
-
         Ok(CommandResult::Success)
     }
 
@@ -302,43 +301,39 @@ impl ChatCommand {
 
                     println!("{}", "请输入用户名或编号:".cyan());
                     let mut input_handler = CrosstermInputHandler::new();
-                    loop {
-                        if let Some(input) = input_handler.start_input_loop("选择> ").await? {
-                            let input = input.trim();
-                            // 优先处理切换命令
-                            if self.context.handle_switch_command(input).await {
-                                return Ok(());
-                            }
-                            // 再处理其它命令
-                            if input.starts_with(':') {
-                                match input {
-                                    ":q" | ":exit" | ":quit" => {
-                                        println!("{}", "已退出联系人选择".yellow());
-                                        return Ok(());
-                                    }
-                                    _ => {
-                                        println!("{}", "未知命令".red());
-                                        continue; // 不退出，继续输入
-                                    }
+                    while let Some(input) = input_handler.start_input_loop("选择> ").await? {
+                        let input = input.trim();
+                        // 优先处理切换命令
+                        if self.context.handle_switch_command(input).await {
+                            return Ok(());
+                        }
+                        // 再处理其它命令
+                        if input.starts_with(':') {
+                            match input {
+                                ":q" | ":exit" | ":quit" => {
+                                    println!("{}", "已退出联系人选择".yellow());
+                                    return Ok(());
+                                }
+                                _ => {
+                                    println!("{}", "未知命令".red());
+                                    continue; // 不退出，继续输入
                                 }
                             }
-                            // 处理编号
-                            if let Ok(index) = input.parse::<usize>() {
-                                if index > 0 && index <= contacts.len() {
-                                    let username = &contacts[index - 1].receiver_user_name;
-                                    self.start_chat_with_user(username).await?;
-                                } else {
-                                    println!("{}", "无效的编号".red());
-                                }
-                                return Ok(());
+                        }
+                        // 处理编号
+                        if let Ok(index) = input.parse::<usize>() {
+                            if index > 0 && index <= contacts.len() {
+                                let username = &contacts[index - 1].receiver_user_name;
+                                self.start_chat_with_user(username).await?;
+                            } else {
+                                println!("{}", "无效的编号".red());
                             }
-                            // 处理用户名
-                            if !input.is_empty() {
-                                self.start_chat_with_user(input).await?;
-                                return Ok(());
-                            }
-                        } else {
-                            break;
+                            return Ok(());
+                        }
+                        // 处理用户名
+                        if !input.is_empty() {
+                            self.start_chat_with_user(input).await?;
+                            return Ok(());
                         }
                     }
                 }
