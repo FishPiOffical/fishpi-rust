@@ -518,7 +518,13 @@ impl ChatroomCommand {
                                                     .iter()
                                                     .find(|w| w.user_name == status.who_got)
                                                 {
-                                                    Self::rps_result(gesture, who.money, is_sender);
+                                                    let display_gesture = if is_sender {
+                                                        gesture
+                                                    } else {
+                                                        Self::deduce_receiver_gesture(gesture, who.money)
+                                                    };
+                                                    
+                                                    Self::rps_result(display_gesture, who.money, is_sender);
                                                 }
                                             }
                                         }
@@ -788,7 +794,7 @@ impl ChatroomCommand {
     fn rps_result(gesture: i32, money: i32, is_sender: bool) {
         let gesture_name = GestureType::from_i32(gesture)
             .map(|g| g.name())
-            .unwrap_or("未知");
+            .unwrap_or("未知");        
         if is_sender {
             match money {
                 m if m < 0 => println!(
@@ -816,6 +822,29 @@ impl ChatroomCommand {
                     m.abs().to_string().cyan().bold()
                 ),
                 _ => println!("\r  🤝 你出 {} 平局!", gesture_name.yellow()),
+            }
+        }
+    }
+
+    fn deduce_receiver_gesture(sender_gesture: i32, money: i32) -> i32 {
+        if money == 0 {
+            // 平局
+            sender_gesture
+        } else if money > 0 {
+            // 接收者赢
+            match sender_gesture {
+                0 => 2, // 发送者石头(0)，接收者布(2)赢
+                1 => 0, // 发送者剪刀(1)，接收者石头(0)赢  
+                2 => 1, // 发送者布(2)，接收者剪刀(1)赢
+                _ => sender_gesture,
+            }
+        } else {
+            // 接收者输
+            match sender_gesture {
+                0 => 1, // 发送者石头(0)，接收者剪刀(1)输
+                1 => 2, // 发送者剪刀(1)，接收者布(2)输
+                2 => 0, // 发送者布(2)，接收者石头(0)输
+                _ => sender_gesture,
             }
         }
     }

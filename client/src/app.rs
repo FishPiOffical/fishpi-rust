@@ -205,6 +205,7 @@ impl App {
                             }
                         }
                         ":n" | ":notice" => {
+                            self.client.notice.remove_all_listeners().await;
                             if !self.client.notice.is_connected().await {
                                 self.client.notice.connect(None).await;
                             }
